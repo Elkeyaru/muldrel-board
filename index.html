@@ -298,6 +298,8 @@
   .respuesta-suspecto.negativa{background:rgba(124,32,32,0.1); border-left:4px solid var(--blood);}
   .respuesta-suspecto.positiva{background:rgba(76,122,76,0.12); border-left:4px solid var(--ok);}
   .sin-conexion{background:rgba(33,29,18,0.05); border:1px dashed rgba(33,29,18,0.28); padding:14px 16px; border-radius:var(--r-btn); font-size:0.85rem;}
+  .card-pregunta{border-bottom:1px solid rgba(33,29,18,0.14); padding-bottom:14px;}
+  .card-pregunta:last-child{border-bottom:none; padding-bottom:0;}
   .fila-modal{display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;}
 
   .grid-pruebas{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px;}
@@ -379,7 +381,7 @@
 
 <div id="juego">
   <div class="topbarra">
-    <div class="topbarra-caso">EXPEDIENTE MB-07<small>TELÓN FINAL · CONFIDENCIAL</small></div>
+    <div class="topbarra-caso"><span id="topbarra-numero-caso">EXPEDIENTE</span><small id="topbarra-titulo-caso">CONFIDENCIAL</small></div>
     <div class="topbarra-derecha"><span class="chip-sala">Sala <b id="codigo-sala-visible">—</b></span> <span class="reloj" id="reloj">00:00</span></div>
   </div>
   <div class="cuerpo">
@@ -390,7 +392,10 @@
 
 <script>
 /* ================= DATOS DEL CASO ================= */
-const CASO = {
+const CASO_TELON_FINAL = {
+  id:"telon-final",
+  numero:"MB-07",
+  tituloCorto:"Telón Final",
   victima:{
     nombre:"Elena Vasco Reyes", edad:47, cargo:"Directora artística y productora del Gran Teatro Muldrel",
     hallazgo:"Hallada a las 00:10 h por el utilero Diego Hurtado, colgando de una cuerda de tramoya atada a una viga de su despacho, tras bambalinas.",
@@ -518,7 +523,8 @@ const CASO = {
       ],
       revelacion:"Al leerle la entrada del diario donde Elena la llama 'casi tierna' por seguir esperando, algo en Marta se rompe. Confiesa que la conversación de las 23:15 terminó con Elena diciéndole, sin ningún filtro, que jamás pensaba ascenderla — que le gustaba tenerla necesitada, que 'las que dependen tanto son las que mejor trabajan'. Marta tomó el trofeo del estante más cercano y la golpeó una vez en la nuca. Describe lo que hizo después — reordenar el escritorio, atar la cuerda, limpiar el trofeo, escribir una nota falsa sobre las cuentas para desviar la sospecha hacia Carla — no como una decisión, sino como algo que simplemente ocurrió, 'pieza por pieza, como se monta un decorado'.",
       estadoTrasRevelar:"Coartada rota — confesión completa",
-      esCulpable:true
+      esCulpable:true,
+      autorFrase:"es la autora"
     },
     {
       id:"diego", nombre:"Diego Hurtado Castro", edad:31, rol:"Técnico de sonido y luces",
@@ -619,8 +625,188 @@ const CASO = {
   sospechosoCorrectoId:"marta",
   armaCorrectaId:"trofeo",
   pruebasClave:["copa","diario","trofeo"],
-  minCuaderno:120
+  minCuaderno:120,
+  pesos:{responsable:40, responsableSinConfesion:18, arma:20, motivo:20, porPrueba:10, maxPruebas:2},
+  corchoEvidenciaIds:["tela","copa","diario","bitacora_general","taxi"]
 };
+
+/* ============================================================================
+   CASO MB-08 — "Nueve minutos tarde"
+   ============================================================================ */
+const CASO_NUEVE_MINUTOS = (function construirCasoNueveMinutos(){
+  const expediente = [
+    {id:"P01", fase:1, categoria:"Forense", titulo:"Posición del cuerpo", resumenCorto:"Tomás cayó junto al escritorio auxiliar.", fuente:"Policía científica", contenido:"Cuerpo localizado a 1,1 m del escritorio. Lesión contundente única. No existen signos de lucha prolongada.", interpretacionInicial:"Ataque inesperado.", interpretacionCorrecta:"Conocía o toleró la proximidad de quien lo atacó.", esCritica:true},
+    {id:"P02", fase:1, categoria:"Forense", titulo:"Ventana post mortem", resumenCorto:"Estimación inicial amplia.", fuente:"Médico forense", contenido:"Muerte estimada entre 21:50 y 22:20; temperatura ambiental 22,4 °C.", interpretacionInicial:"Compatible con la llamada de las 22:14.", interpretacionCorrecta:"No puede por sí sola confirmar actividad a las 22:14.", esCritica:false},
+    {id:"P03", fase:1, categoria:"Forense", titulo:"Patrón de la lesión", resumenCorto:"Objeto compacto de borde redondeado.", fuente:"Patología", contenido:"Impacto de 42×31 mm compatible con objeto metálico pesado sin filo.", interpretacionInicial:"Una herramienta cualquiera.", interpretacionCorrecta:"Compatible con el pisapapeles desaparecido.", esCritica:true},
+    {id:"P04", fase:1, categoria:"Expediente", titulo:"Inventario de la oficina", resumenCorto:"Falta un pisapapeles.", fuente:"Inventario fotográfico", contenido:"Fotografía de días antes muestra un pisapapeles de acero de 1,34 kg sobre el escritorio auxiliar.", interpretacionInicial:"Un objeto extraviado.", interpretacionCorrecta:"Posible arma homicida.", esCritica:true},
+    {id:"P05", fase:1, categoria:"Forense", titulo:"Fibras azules", resumenCorto:"Microfibras en el borde del escritorio.", fuente:"Laboratorio", contenido:"Poliéster azul de 0,3–1,1 mm.", interpretacionInicial:"Uniforme de Mantenimiento.", interpretacionCorrecta:"También coincide con paños exclusivos de oficinas de Dirección.", esCritica:false},
+    {id:"P06", fase:1, categoria:"Documento", titulo:"Conciliación de la constructora", resumenCorto:"Archivo terminado a las 21:18.", fuente:"Portátil de la víctima", contenido:"CONCILIACION_FINAL.xlsx, guardado 21:18:32. Total cuestionado: 8.4 millones en moneda local.", interpretacionInicial:"Una investigación financiera de rutina.", interpretacionCorrecta:"Establece el motivo del homicidio.", esCritica:true},
+    {id:"P07", fase:2, categoria:"Registro", titulo:"Acceso con tarjeta propia", resumenCorto:"La víctima entra a las 21:47.", fuente:"Control de puertas", contenido:"Tarjeta de la víctima / oficina / 21:47:11 / acceso concedido.", interpretacionInicial:"Estaba sola.", interpretacionCorrecta:"Solo demuestra que entró; no que siguiera sola.", esCritica:false},
+    {id:"P08", fase:2, categoria:"Registro", titulo:"Acceso con tarjeta maestra", resumenCorto:"Una tarjeta maestra abre la oficina.", fuente:"Control de puertas", contenido:"Tarjeta maestra M-04 / oficina / entrada 21:52:06; salida 21:59:41.", interpretacionInicial:"Entró Seguridad.", interpretacionCorrecta:"Alguien ajeno a Seguridad usó esa tarjeta.", esCritica:true},
+    {id:"P09", fase:2, categoria:"Registro", titulo:"Llamada de las 22:14", resumenCorto:"La extensión de la víctima llama a recepción.", fuente:"Central telefónica", contenido:"Extensión 317 → recepción, 22:14:03, duración 00:07.", interpretacionInicial:"La víctima seguía viva.", interpretacionCorrecta:"La llamada fue programada, no realizada por ella.", esCritica:true},
+    {id:"P10", fase:2, categoria:"Registro", titulo:"Actividad del ordenador", resumenCorto:"El equipo se usa a las 21:58.", fuente:"Registro del sistema", contenido:"Sesión desbloqueada 21:58:14; archivo abierto 21:58:37.", interpretacionInicial:"Seguía trabajando.", interpretacionCorrecta:"Alguien más usó su sesión.", esCritica:false},
+    {id:"P11", fase:2, categoria:"Testimonio", titulo:"Camarero del restaurante", resumenCorto:"Mauricio desapareció unos minutos.", fuente:"Empleado del restaurante", contenido:"«Llegó antes de las diez. Cuando fui por la segunda botella, su silla estaba vacía.»", interpretacionInicial:"Una ausencia breve, sin importancia.", interpretacionCorrecta:"Rompe la coartada de permanencia continua.", esCritica:true},
+    {id:"P12", fase:2, categoria:"Registro", titulo:"Cámara exterior independiente", resumenCorto:"Mauricio aparece a las 21:51.", fuente:"CCTV externo", contenido:"Mauricio cruza el corredor norte a las 21:51:24 según un reloj sincronizado de forma independiente.", interpretacionInicial:"Iba hacia administración, sin más.", interpretacionCorrecta:"Puede llegar a la oficina antes de las 21:52.", esCritica:true},
+    {id:"P13", fase:2, categoria:"Registro", titulo:"Cambio de hora en la cámara del pasillo", resumenCorto:"El reloj de una cámara fue alterado.", fuente:"Servidor de videovigilancia", contenido:"Configuración manual de -00:09:00 aplicada a las 21:33:08 mediante una cuenta administrativa.", interpretacionInicial:"Un error técnico.", interpretacionCorrecta:"Manipulación deliberada para fabricar una coartada.", esCritica:true},
+    {id:"P14", fase:2, categoria:"Expediente", titulo:"Custodia de la tarjeta maestra", resumenCorto:"La tarjeta M-04 desapareció antes.", fuente:"Seguridad", contenido:"M-04 debía permanecer cargando entre 20:30 y 06:00. A las 22:22 se reporta fuera de su base.", interpretacionInicial:"Negligencia de Seguridad.", interpretacionCorrecta:"Fue retirada deliberadamente antes del homicidio.", esCritica:true},
+    {id:"P15", fase:3, categoria:"Forense", titulo:"Tarjeta maestra recuperada", resumenCorto:"Aparece cerca de Compras.", fuente:"Policía", contenido:"Encontrada a las 22:31, detrás de un archivador a 4 m del despacho de Elena.", interpretacionInicial:"Elena pudo haberla usado.", interpretacionCorrecta:"La ubicación es incompatible con un uso probado de su parte.", esCritica:false},
+    {id:"P16", fase:3, categoria:"Registro", titulo:"Videollamada de Elena", resumenCorto:"Coartada continua.", fuente:"Dispositivo personal", contenido:"Llamada 21:50:16–22:09:44; su red inalámbrica de oficina no registra desconexión.", interpretacionInicial:"Pudo dejar el teléfono y salir.", interpretacionCorrecta:"El video la muestra de forma continua durante toda la llamada.", esCritica:false},
+    {id:"P17", fase:3, categoria:"Registro", titulo:"Programación en la central telefónica", resumenCorto:"Una llamada automática, programada.", fuente:"Servidor telefónico", contenido:"El usuario de Mauricio crea una tarea a las 22:11:02: extensión 317 → recepción, ejecución 22:14.", interpretacionInicial:"Una operación administrativa cualquiera.", interpretacionCorrecta:"Fabricó una falsa prueba de vida.", esCritica:true},
+    {id:"P18", fase:3, categoria:"Documento", titulo:"Conversación de Laura", resumenCorto:"Colaboraba con la víctima.", fuente:"Teléfono", contenido:"18:04 — «Tengo las órdenes. Mañana enviamos todo.»", interpretacionInicial:"Una conspiración contra la empresa.", interpretacionCorrecta:"Laura ayudaba a investigar el fraude.", esCritica:false},
+    {id:"P19", fase:3, categoria:"Registro", titulo:"Biométricos de Laura", resumenCorto:"Accesos a las 21:54 y 21:59.", fuente:"Sala de auditoría", contenido:"Huella validada a las 21:54:12 y a las 21:59:08.", interpretacionInicial:"—", interpretacionCorrecta:"No pudo estar en la oficina durante la agresión.", esCritica:false},
+    {id:"P20", fase:3, categoria:"Testimonio", titulo:"Auxiliar administrativo", resumenCorto:"La víctima llevaba carpeta y memoria USB.", fuente:"Testigo", contenido:"La vio a las 21:29 con una carpeta roja y una memoria USB negra.", interpretacionInicial:"Documentación ordinaria.", interpretacionCorrecta:"Esa memoria USB desapareció.", esCritica:false},
+    {id:"P21", fase:3, categoria:"Testimonio", titulo:"Descubrimiento del cuerpo", resumenCorto:"Laura encuentra el cuerpo.", fuente:"Testigo", contenido:"Entra acompañada por Seguridad a las 22:26 al no recibir respuesta.", interpretacionInicial:"Laura pudo alterar la escena.", interpretacionCorrecta:"Seguridad confirma que entraron juntas.", esCritica:false},
+    {id:"P22", fase:4, categoria:"Testimonio", titulo:"Última conversación confirmada", resumenCorto:"La víctima seguía viva a las 21:42.", fuente:"Elena", contenido:"Conversación sobre una orden de compra; un mensaje enviado durante la charla confirma el contexto a las 21:43.", interpretacionInicial:"—", interpretacionCorrecta:"Da un límite inferior independiente de vida.", esCritica:false},
+    {id:"P23", fase:4, categoria:"Registro", titulo:"Cámara junto al cargador de tarjetas", resumenCorto:"Mauricio junto a M-04.", fuente:"Cámara de Seguridad", contenido:"A las 20:41:17 Mauricio permanece 34 segundos junto al cargador; al retirarse, la tarjeta M-04 deja de verse.", interpretacionInicial:"Coincidencia.", interpretacionCorrecta:"Es el momento en que la retira.", esCritica:true},
+    {id:"P24", fase:4, categoria:"Testimonio", titulo:"Proveedor del restaurante", resumenCorto:"Mauricio regresa cerca de las 22:07.", fuente:"Testigo", contenido:"Recuerda su regreso justo después de un mensaje registrado a las 22:06:31.", interpretacionInicial:"Una hora aproximada.", interpretacionCorrecta:"Corrobora el tiempo que estuvo ausente.", esCritica:false},
+    {id:"P25", fase:4, categoria:"Forense", titulo:"Hemorragia y coagulación", resumenCorto:"La muerte fue probablemente anterior a las 22:05.", fuente:"Ampliación forense", contenido:"Un análisis conjunto reduce el intervalo más probable a 21:55–22:03.", interpretacionInicial:"Una estimación más.", interpretacionCorrecta:"Incompatible con una llamada real a las 22:14.", esCritica:true},
+    {id:"P26", fase:4, categoria:"Testimonio", titulo:"Golpe escuchado", resumenCorto:"Un ruido seco a las 21:55.", fuente:"Empleada de lavandería", contenido:"Escucha un golpe seco justo después de escanear un paquete, a las 21:55:38.", interpretacionInicial:"El carro de servicio.", interpretacionCorrecta:"Coincide con el momento de la agresión.", esCritica:true},
+    {id:"P27", fase:4, categoria:"Registro", titulo:"Documento alterado", resumenCorto:"Alguien intenta borrar un vínculo.", fuente:"Ordenador de la víctima", contenido:"A las 21:58:37 se elimina la fila «Aprobación final: M. Lora»; la recuperación automática conserva la versión previa.", interpretacionInicial:"La víctima corrigió el documento.", interpretacionCorrecta:"Mauricio intentó eliminar su propio nombre.", esCritica:true},
+    {id:"P28", fase:5, categoria:"Forense", titulo:"Paño ejecutivo", resumenCorto:"Las fibras coinciden.", fuente:"Laboratorio", contenido:"Las fibras de P05 coinciden en polímero y pigmentación con los paños que solo se entregan a oficinas de Dirección.", interpretacionInicial:"Descarta a Mantenimiento.", interpretacionCorrecta:"El arma fue limpiada con uno de esos paños.", esCritica:false},
+    {id:"P29", fase:5, categoria:"Forense", titulo:"Pisapapeles recuperado", resumenCorto:"El arma, en el vehículo de Mauricio.", fuente:"Registro autorizado", contenido:"Encontrado bajo el revestimiento del maletero. Microtrazas biológicas de la víctima permanecen en la unión inferior.", interpretacionInicial:"Una prueba directa, sin más.", interpretacionCorrecta:"Vincula a Mauricio, el arma y a la víctima en un solo objeto.", esCritica:true},
+    {id:"P30", fase:5, categoria:"Expediente", titulo:"Beneficiario final de la constructora", resumenCorto:"Una conexión económica.", fuente:"Registro mercantil y bancario", contenido:"El beneficiario final es el cuñado de Mauricio. Transferencias posteriores alcanzan una cuenta compartida con la esposa de Mauricio.", interpretacionInicial:"Un conflicto de interés cualquiera.", interpretacionCorrecta:"Establece el beneficio económico y el motivo previo.", esCritica:true}
+  ];
+
+  const pruebas = expediente.map(e=>({id:e.id, nombre:e.titulo, tipo:e.categoria}));
+
+  return {
+    id:"nueve-minutos",
+    numero:"MB-08",
+    tituloCorto:"Nueve minutos tarde",
+    victima:{
+      nombre:"Tomás Valera", edad:46, cargo:"Director financiero del Hotel Mirador del Este",
+      hallazgo:"Hallado a las 22:26 por Laura Méndez, dentro del archivo administrativo de la dirección, tras no responder a la puerta.",
+      retrato:"Metódico, reservado y extremadamente cuidadoso con la documentación financiera. No confiaba del todo en los sistemas digitales internos y conservaba copias físicas de las conciliaciones más sensibles. Esa semana se había quedado trabajando hasta tarde varias noches seguidas."
+    },
+    expediente, pruebas,
+    fases:[
+      {numero:1, titulo:"La habitación cerrada", objetivo:"Establecer la escena y la cronología aparente.", briefing:"El archivo administrativo registra una sola entrada de la víctima. Comprueben primero si eso significa realmente que estuvo sola.", pregunta:"Según la autopsia y la escena, ¿la hora oficial de la muerte (compatible con la llamada de las 22:14) es fiable?", opciones:["Sí, la ventana forense y la llamada coinciden perfectamente.","No: la ventana forense es amplia y no puede por sí sola confirmar que siguiera viva a las 22:14.","No hay ninguna estimación forense todavía.","Sí, porque nadie más entró según el registro de puertas."], correcta:1, pista:"Revisen P01–P06: la estimación médica es un rango amplio, no un instante exacto.", conclusion:"La hora oficial todavía no es fiable — hay que seguir investigando."},
+      {numero:2, titulo:"Seis coartadas", objetivo:"Reconstruir los movimientos de cada persona.", briefing:"Seis personas tenían motivos para temer esta investigación. Reconstruyan dónde estaba cada una.", pregunta:"¿Qué dos hallazgos, juntos, demuestran que alguien más entró al archivo administrativo esa noche?", opciones:["El acceso con tarjeta propia de la víctima y su reloj de pulsera.","El acceso con la tarjeta maestra M-04 y el cambio de hora detectado en la cámara del pasillo.","La videollamada de Elena y las huellas biométricas de Laura.","El inventario de la oficina y la conciliación financiera."], correcta:1, pista:"P08 (una tarjeta que no debería estar ahí) y P13 (una cámara que miente) son las dos anomalías clave de esta fase.", conclusion:"Alguien más entró al archivo con una tarjeta que no le correspondía, y una cámara del pasillo tiene el reloj mal — deliberadamente."},
+      {numero:3, titulo:"Lo que todos esconden", objetivo:"Separar los secretos personales del homicidio.", briefing:"Todos mienten sobre algo. No todos mienten sobre lo mismo.", pregunta:"La llamada de las 22:14 desde la extensión de la víctima, ¿demuestra que seguía con vida?", opciones:["Sí, es una llamada real hecha por ella misma.","No: fue programada por adelantado desde un panel de administración telefónica.","Es imposible saberlo con la evidencia disponible.","Sí, porque coincide con la ventana forense inicial."], correcta:1, pista:"Revisen P17: alguien programó esa llamada tres minutos antes de que se ejecutara.", conclusion:"La muerte pudo ocurrir bastante antes de las 22:00 — la llamada era una coartada fabricada."},
+      {numero:4, titulo:"Nueve minutos", objetivo:"Sincronizar los sistemas y corregir la cámara manipulada.", briefing:"Una cámara del pasillo administrativo quedó nueve minutos atrasada. El control de puertas, la central telefónica y una cámara externa no comparten ese reloj: usan el suyo propio, sin alterar.", pregunta:"La cámara del pasillo (C-12) muestra a Mauricio llegando 9 minutos después de lo real. Si el control de puertas (reloj independiente) registra la tarjeta maestra entrando a las 21:52, y una cámara externa independiente ya lo ubica en el corredor norte a las 21:51, ¿a qué hora podía estar físicamente Mauricio dentro del archivo administrativo?", opciones:["No podía llegar antes de las 22:01, cuando lo muestra C-12.","Podía estar dentro desde aproximadamente las 21:52, coincidiendo con el resto de los sistemas no manipulados.","Es imposible determinarlo sin la confesión de un testigo.","Solo pudo entrar después de la llamada de las 22:14."], correcta:1, pista:"Ignoren lo que dice la cámara manipulada (P13) y crucen solo los relojes que nadie tocó: puertas (P08), cámara externa (P12).", conclusion:"Corregidos los nueve minutos, Mauricio podía estar físicamente en el archivo administrativo desde las 21:52 — justo cuando el golpe, según una testigo, se escuchó a las 21:55."},
+      {numero:5, titulo:"Cadena de custodia", objetivo:"Demostrar autor, método, motivo y hora con una sola teoría.", briefing:"Ya tienen el arma, el acceso, el motivo económico y la manipulación posterior. Únanlo todo en una acusación que no deje cabos sueltos.", pregunta:"¿Qué combinación de pruebas conecta simultáneamente acceso, presencia, arma y motivo de Mauricio?", opciones:["Solo el hallazgo del pisapapeles en su vehículo.","El acceso con M-04, la cámara externa, el pisapapeles recuperado y el beneficiario de la constructora.","Únicamente su ausencia del restaurante.","Solo la programación de la llamada telefónica."], correcta:1, pista:"P08 + P12 + P29 + P30 son la columna vertebral de la acusación.", conclusion:"Una única teoría explica todas las anomalías: acceso, presencia, arma y motivo apuntan a la misma persona."}
+    ],
+    sospechosos:[
+      {
+        id:"mauricio", nombre:"Mauricio Lora", edad:44, rol:"Director de Operaciones",
+        relacion:"Rival interno de la víctima: sus propuestas de inversión eran bloqueadas por el área financiera.",
+        testimonio:"«Cené con dos proveedores. No entré al archivo administrativo.»",
+        coartada:"Dice haber permanecido en el restaurante entre las 21:45 y las 22:18.",
+        sospechaInicial:false,
+        preguntas:[
+          {id:"q1", pregunta:"¿Dónde estuvo entre las 21:45 y las 22:15?", pruebaId:null, respuestaSinPrueba:"«En el restaurante, con los proveedores. No me moví de la mesa.»"},
+          {id:"q2", pregunta:"Una cámara externa lo sitúa en el corredor norte a las 21:51. ¿Por qué?", pruebaId:"P12", respuestaSinPrueba:"«No recuerdo haber estado en ningún corredor a esa hora.»", respuestaConPrueba:"Cambia de versión: «Fui al baño del corredor norte.» Los baños del restaurante están en la dirección opuesta — la excusa no resiste el cruce de planos."},
+          {id:"q3", pregunta:"¿Usó la tarjeta maestra M-04 esa noche?", pruebaId:"P08", respuestaSinPrueba:"«No recuerdo haber tocado ninguna tarjeta que no fuera la mía.»", respuestaConPrueba:"Con el registro de acceso y la cámara del cargador en la mano, deja de negarlo directamente y pasa a un silencio calculado — no ofrece ninguna explicación alternativa verificable."},
+          {id:"q4", pregunta:"¿Por qué su usuario programó la llamada de las 22:14?", pruebaId:"P17", respuestaSinPrueba:"«Mi sesión puede quedar abierta, cualquiera pudo usarla.»", respuestaConPrueba:"El registro de autenticación de dos factores muestra que fue él mismo quien inició sesión a las 22:10:41, tres minutos antes de programar la llamada. Confiesa haber querido «cubrir el horario»."},
+          {id:"q5", pregunta:"¿Por qué apareció el pisapapeles desaparecido dentro de su vehículo?", pruebaId:"P29", respuestaSinPrueba:"«No sé quién lo puso ahí. Yo no lo llevé.»", respuestaConPrueba:"Ante las microtrazas biológicas de la víctima en la base del objeto, dentro de su propio maletero, no ofrece ninguna explicación que resista una segunda pregunta."},
+          {id:"q6", pregunta:"¿Qué relación tiene con la constructora que facturaba mantenimiento?", pruebaId:"P30", respuestaSinPrueba:"«Conozco al dueño, nada más. No tengo ningún beneficio ahí.»", respuestaConPrueba:"Las transferencias posteriores a una cuenta compartida con su esposa contradicen directamente la negación: admite el motivo económico, aunque sigue sin admitir el golpe."}
+        ],
+        revelacion:"Descubrió esa tarde que Tomás tenía documentación suficiente para vincularlo económicamente con la constructora de su cuñado. A las 20:41 tomó la tarjeta maestra M-04 del cargador de Seguridad. A las 21:33, con credenciales que Iván le había compartido para emergencias, atrasó nueve minutos la cámara del pasillo administrativo. Entró al archivo a las 21:52; Tomás se negó a entregarle el expediente y le dijo que existía una copia fuera de su oficina. A las 21:55 tomó el pisapapeles del escritorio auxiliar y lo golpeó. Localizó la memoria USB, usó el ordenador de Tomás para intentar borrar su nombre de una hoja de aprobación (la recuperación automática conservó la versión previa) y salió a las 21:59. Limpió el arma con un paño de su propia oficina, la ocultó en su vehículo, y a las 22:11 programó una llamada automática desde la extensión de Tomás para fabricar una prueba de vida a las 22:14. Confió en que la cámara atrasada desplazaría nueve minutos su presencia real — sin saber que el control de puertas, la central telefónica y una cámara externa llevan sus propios relojes, independientes entre sí.",
+        estadoTrasRevelar:"Coartada rota — cronología reconstruida con fuentes independientes",
+        esCulpable:true,
+        autorFrase:"es el autor"
+      },
+      {
+        id:"elena", nombre:"Elena Cruz", edad:38, rol:"Gerente de Compras",
+        relacion:"La víctima auditaba varios contratos que ella gestionaba.",
+        testimonio:"«No vi a Tomás después de las seis de la tarde.»",
+        coartada:"Dice haber estado en videollamada con su hermana desde las 21:50.",
+        sospechaInicial:true,
+        preguntas:[
+          {id:"q1", pregunta:"¿Cuándo fue la última vez que vio a Tomás?", pruebaId:null, respuestaSinPrueba:"«A las seis, cuando terminó mi turno. No hablamos después de eso.»"},
+          {id:"q2", pregunta:"Un mensaje suyo quedó registrado a las 21:43, en plena conversación con Tomás.", pruebaId:"P22", respuestaSinPrueba:"«Ya dije que no lo vi después de las seis.»", respuestaConPrueba:"Admite la conversación de las 21:42: discutieron por una orden de compra irregular y por regalos que había aceptado de un proveedor. No quería que eso saliera a la luz — nada tiene que ver con la muerte."},
+          {id:"q3", pregunta:"La tarjeta maestra M-04 apareció a pocos metros de su despacho. ¿La usó?", pruebaId:"P15", respuestaSinPrueba:"«No, nunca la he tocado.»", respuestaConPrueba:"Sostiene la negación — y la videollamada continua durante toda la ventana de la agresión respalda que dice la verdad en esto."}
+        ],
+        revelacion:"Ocultaba que había aceptado regalos de un proveedor y que Tomás la había descubierto — un problema real para su puesto, pero sin relación con el homicidio. Su videollamada con su hermana, ininterrumpida entre las 21:50 y las 22:09, y el hecho de que su red de oficina no registra ningún corte, la sitúan de forma continua fuera del archivo administrativo durante toda la ventana de la agresión.",
+        estadoTrasRevelar:"Coartada aclarada — motivo real, ajeno al crimen"
+      },
+      {
+        id:"laura", nombre:"Laura Méndez", edad:29, rol:"Auditora interna",
+        relacion:"Colaboraba en secreto con Tomás en la investigación del fraude.",
+        testimonio:"«Mi relación con Tomás era estrictamente profesional.»",
+        coartada:"Dice haber estado trabajando en la sala de auditoría toda la noche.",
+        sospechaInicial:false,
+        preguntas:[
+          {id:"q1", pregunta:"¿Qué relación tenía con Tomás?", pruebaId:null, respuestaSinPrueba:"«Estrictamente profesional. Nada fuera de lo normal.»"},
+          {id:"q2", pregunta:"Un mensaje suyo dice: «Tengo las órdenes. Mañana enviamos todo.»", pruebaId:"P18", respuestaSinPrueba:"«No sé de qué mensaje habla.»", respuestaConPrueba:"Admite que colaboraba en secreto con Tomás para reunir pruebas del fraude — motivo por el que había copiado documentación sin autorización."},
+          {id:"q3", pregunta:"Se hallaron sus huellas en el archivador del despacho de dirección. ¿Por qué?", pruebaId:null, respuestaSinPrueba:"«No he entrado ahí en todo el día.»", respuestaConPrueba:"Reconoce haber entrado por la tarde, sin autorización, a copiar documentación — antes de la hora del homicidio."},
+          {id:"q4", pregunta:"¿Puede confirmar dónde estuvo entre las 21:50 y las 22:00?", pruebaId:"P19", respuestaSinPrueba:"«En la sala de auditoría, como toda la noche.»", respuestaConPrueba:"Sus propias huellas biométricas, validadas a las 21:54 y a las 21:59 en la sala de auditoría, confirman que no pudo estar en el archivo administrativo durante la agresión."}
+        ],
+        revelacion:"Su secreto explica las huellas y la mentira inicial, pero no el homicidio: llevaba semanas copiando documentación sin autorización para ayudar a Tomás a construir el caso contra el fraude de la constructora. Sus accesos biométricos a la sala de auditoría, validados minutos antes y después del momento de la agresión, la descartan por completo.",
+        estadoTrasRevelar:"Coartada aclarada — motivo real, ajeno al crimen"
+      },
+      {
+        id:"ivan", nombre:"Iván Cabrera", edad:32, rol:"Administrador de sistemas",
+        relacion:"Tomás exigía una auditoría de seguridad informática sobre su área.",
+        testimonio:"«Nadie más conoce mis credenciales administrativas.»",
+        coartada:"Dice haber estado toda la noche en la sala de servidores.",
+        sospechaInicial:true,
+        preguntas:[
+          {id:"q1", pregunta:"¿Quién puede alterar la hora de una cámara de seguridad?", pruebaId:null, respuestaSinPrueba:"«Solo un administrador. Solo yo tengo ese acceso, en teoría.»"},
+          {id:"q2", pregunta:"Su propia cuenta administrativa hizo el cambio de horario en la cámara del pasillo.", pruebaId:"P13", respuestaSinPrueba:"«Eso es imposible, yo no toqué esa cámara.»", respuestaConPrueba:"«Entonces lo hice yo» — responde por inferencia, no por certeza; la cámara física de la sala de servidores y los sensores del rack lo sitúan allí en ese instante exacto, lo que descarta que él mismo hiciera el cambio en persona."},
+          {id:"q3", pregunta:"¿Compartió alguna vez esas credenciales con alguien más?", pruebaId:null, respuestaSinPrueba:"«No, jamás. Son personales e intransferibles.»", respuestaConPrueba:"Confrontado con mensajes internos, admite que Mauricio conocía una contraseña temporal que él mismo le había dado meses atrás para resolver una emergencia."},
+          {id:"q4", pregunta:"¿Por qué ocultó eso al principio?", pruebaId:null, respuestaSinPrueba:"—", respuestaConPrueba:"«Porque eso me cuesta el trabajo.» — su mentira protegía su propio puesto, no a un cómplice: no participó en el homicidio, pero su descuido lo hizo posible."}
+        ],
+        revelacion:"No es cómplice del homicidio, pero su negligencia lo permitió: meses atrás compartió una contraseña administrativa temporal con Mauricio para resolver una emergencia técnica, y nunca la revocó. Cuando descubrió que esa cuenta se había usado para alterar la cámara C-12, ocultó el hecho inicialmente por miedo a perder su empleo — no por encubrir un crimen. La cámara física de la sala de servidores y los sensores del rack confirman su presencia allí durante toda la ventana de la agresión.",
+        estadoTrasRevelar:"Coartada aclarada — encubrimiento involuntario, ajeno al crimen"
+      },
+      {
+        id:"gabriel", nombre:"Gabriel Núñez", edad:51, rol:"Jefe de Mantenimiento",
+        relacion:"Tomás investigaba facturas de mantenimiento infladas.",
+        testimonio:"«No tengo ninguna relación con esa constructora.»",
+        coartada:"Dice haber estado reparando una bomba hidráulica toda la noche.",
+        sospechaInicial:true,
+        preguntas:[
+          {id:"q1", pregunta:"¿Qué relación tiene con la constructora que facturaba mantenimiento?", pruebaId:null, respuestaSinPrueba:"«Ninguna. Ni siquiera sé bien a qué se dedican.»"},
+          {id:"q2", pregunta:"Las facturas de mantenimiento de los últimos meses están infladas.", pruebaId:null, respuestaSinPrueba:"«Los precios los pone el proveedor, no yo.»", respuestaConPrueba:"Admite haber comprado piezas fuera del procedimiento normal, a través de esa constructora — un fraude propio, menor, sin relación con el homicidio."},
+          {id:"q3", pregunta:"Se hallaron fibras industriales cerca del cuerpo.", pruebaId:"P05", respuestaSinPrueba:"«Cualquier técnico del hotel usa ese mismo uniforme.»", respuestaConPrueba:"Al comparar el polímero y el pigmento exacto de las fibras (P28), se demuestra que no proceden necesariamente de su uniforme — coinciden igual de bien con los paños exclusivos de las oficinas de Dirección."},
+          {id:"q4", pregunta:"¿Puede confirmar dónde estuvo entre las 21:50 y las 22:00?", pruebaId:null, respuestaSinPrueba:"«Reparando la bomba hidráulica, con un compañero.»", respuestaConPrueba:"Los sensores de la bomba y el testimonio de su compañero, junto con el registro de una herramienta con conexión inalámbrica, lo mantienen físicamente en la sala de bombeo durante toda la ventana de la agresión."}
+        ],
+        revelacion:"Su fraude —comprar piezas fuera del procedimiento a través de la misma constructora vinculada a Mauricio— es real, pero independiente del homicidio. Los sensores de la bomba hidráulica, un compañero de turno y el registro de una herramienta inalámbrica lo confirman en la sala de bombeo durante toda la ventana de la agresión.",
+        estadoTrasRevelar:"Coartada aclarada — fraude propio, ajeno al crimen"
+      },
+      {
+        id:"sofia", nombre:"Sofía Alcántara", edad:35, rol:"Responsable de Relaciones Corporativas",
+        relacion:"Tomás sospechaba que filtraba información interna a la prensa.",
+        testimonio:"«No abandoné la terraza del evento en ningún momento.»",
+        coartada:"Dice haber permanecido en un evento privado en la terraza toda la noche.",
+        sospechaInicial:true,
+        preguntas:[
+          {id:"q1", pregunta:"¿Se mantuvo en la terraza durante todo el evento?", pruebaId:null, respuestaSinPrueba:"«Sí, en todo momento. Pueden preguntarle a cualquiera de los invitados.»"},
+          {id:"q2", pregunta:"Una cámara la sitúa cerca de administración durante unos minutos.", pruebaId:null, respuestaSinPrueba:"«Debe ser un error, o alguien que se me parece.»", respuestaConPrueba:"Admite haberse ausentado brevemente — pero no hacia el archivo administrativo."},
+          {id:"q3", pregunta:"¿Con quién se reunió durante esa ausencia?", pruebaId:null, respuestaSinPrueba:"«Con nadie. Ya dije que no me moví.»", respuestaConPrueba:"Confrontada con el registro de un periodista externo, admite una reunión clandestina en el estacionamiento: llevaba tiempo filtrando información corporativa y temía que Tomás la denunciara."}
+        ],
+        revelacion:"Su ausencia de la terraza fue real, pero fue a encontrarse con un periodista, no con Tomás: llevaba meses filtrando información interna y temía que la denuncia de Tomás la expusiera. La grabación continua del periodista, entre las 21:53 y las 22:00, en el estacionamiento exterior, la sitúa lejos del archivo administrativo durante toda la ventana de la agresión. Su mentira protegía a su fuente, no a un homicida.",
+        estadoTrasRevelar:"Coartada aclarada — filtración real, ajena al crimen"
+      }
+    ],
+    motivos:[
+      {id:"m1", texto:"Venganza profesional por decisiones de inversión bloqueadas.", correcto:false},
+      {id:"m2", texto:"Evitar que una filtración periodística saliera a la luz.", correcto:false},
+      {id:"m3", texto:"Impedir que Tomás revelara el fraude económico con la constructora.", correcto:true}
+    ],
+    metodoOpciones:[
+      {id:"me1", texto:"Envenenamiento previo.", correcto:false},
+      {id:"me2", texto:"Golpe con un pisapapeles de acero.", correcto:true},
+      {id:"me3", texto:"Caída provocada durante un forcejeo.", correcto:false}
+    ],
+    horaOpciones:[
+      {id:"h1", texto:"21:55–21:56.", correcto:true},
+      {id:"h2", texto:"22:05–22:06.", correcto:false},
+      {id:"h3", texto:"22:14–22:15.", correcto:false}
+    ],
+    sospechosoCorrectoId:"mauricio",
+    metodoCorrectoId:"me2",
+    horaCorrectaId:"h1",
+    pruebasClave:["P03","P06","P08","P12","P13","P17","P23","P25","P26","P27","P29","P30"],
+    minCuaderno:150,
+    pesos:{responsable:30, responsableSinConfesion:15, arma:20, motivo:20, hora:15, porPrueba:3, maxPruebas:5},
+    corchoEvidenciaIds:["P08","P12","P13","P17","P23","P29","P30","P05","P28","P15","P16","P18","P19","P22"]
+  };
+})();
+
+const CASOS_POR_ID = { "telon-final": CASO_TELON_FINAL, "nueve-minutos": CASO_NUEVE_MINUTOS };
+let CASO = CASO_TELON_FINAL;
 
 const ICONO_BUSTO = `<svg class="mugshot-silueta" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="36" r="19"/><path d="M50 60c-24 0-38 14-38 32v4h76v-4c0-18-14-32-38-32z"/></svg>`;
 
@@ -637,7 +823,7 @@ const estado = {
   caligrafiaElegida:null,
   cuaderno:"",
   respuestasObjetivos:{},
-  acusacion:{sospechosoId:null, armaId:null, motivoId:null, pruebaIds:[]},
+  acusacion:{sospechosoId:null, armaId:null, metodoId:null, motivoId:null, horaId:null, pruebaIds:[]},
   inicioTiempo:null,
   nombreJugador:"",
   numJugadoresEsperados:1,
@@ -651,7 +837,9 @@ const estado = {
   previos:{},
   cuentaRegresivaFin:null,
   yaMeUni:false,
-  partidaComenzada:false
+  partidaComenzada:false,
+  casoId:"telon-final",
+  faseActual:1
 };
 const ESPERA_MS = 60000;
 
@@ -704,7 +892,10 @@ function datosCompartidos(){
     caligrafiaElegida: estado.caligrafiaElegida,
     numJugadoresEsperados: estado.numJugadoresEsperados,
     previos: estado.previos,
-    cuentaRegresivaFin: estado.cuentaRegresivaFin
+    cuentaRegresivaFin: estado.cuentaRegresivaFin,
+    casoId: estado.casoId,
+    faseActual: estado.faseActual,
+    respuestasObjetivos: estado.respuestasObjetivos
   };
 }
 function guardarSala(){
@@ -738,6 +929,7 @@ function alUnirmePorPrimeraVez(soyAnfitrion){
   }
 }
 function renderizarSegunPantalla(){
+  if(estado.casoId && CASOS_POR_ID[estado.casoId]) CASO = CASOS_POR_ID[estado.casoId];
   if(document.getElementById("sala-espera-previa").classList.contains("activo")){
     renderSalaEsperaPrevia();
     revisarInicioAutomatico();
@@ -826,10 +1018,20 @@ function alternarSonido(){
 }
 
 const CASOS_DISPONIBLES = [
-  { id:"telon-final", numero:"MB-07", titulo:"Telón Final", bloqueado:false },
-  { id:"proximo-1", numero:"MB-08", titulo:"Próximamente", bloqueado:true },
+  { id:"telon-final", numero:"MB-07", titulo:"Telón Final", bloqueado:false, etiqueta:"Homicidio escenificado" },
+  { id:"nueve-minutos", numero:"MB-08", titulo:"Nueve minutos tarde", bloqueado:false, etiqueta:"Manipulación de escena" },
   { id:"proximo-2", numero:"MB-09", titulo:"Próximamente", bloqueado:true }
 ];
+const CASOS_META = {
+  "telon-final":{
+    resumen:"La noche de clausura de <em>La Sombra del Rey</em>, en el Gran Teatro Muldrel, Elena Vasco Reyes apareció colgando en su propio despacho. La policía original cerró el caso como suicidio en 48 horas, presionada para evitar un escándalo. Su hermana encontró después algo que nadie había registrado como prueba. El expediente vuelve a abrirse.",
+    meta:["1–8 investigadores","2–3 horas","+16 años","Puerto Muldrel"]
+  },
+  "nueve-minutos":{
+    resumen:"A las 22:26, el director financiero del Hotel Mirador del Este, Tomás Valera, aparece muerto en el archivo administrativo. La cerradura registra su entrada a las 21:47 y ninguna salida hasta el hallazgo. Una llamada desde su propia extensión a las 22:14 parece demostrar que seguía vivo. Pero una cámara del pasillo tiene nueve minutos de retraso — y no todos los relojes del hotel dicen la misma hora.",
+    meta:["1–8 investigadores","3–4 horas","+16 años","Dificultad extrema","Santa Rosalía"]
+  }
+};
 
 function irALobby(){
   document.getElementById("menu").style.display = "none";
@@ -848,24 +1050,25 @@ function renderGridCasos(seleccionadoId){
     }
     return `<div class="caso-card ${seleccionadoId===c.id?'seleccionado':''}" onclick="seleccionarCaso('${c.id}')">
       <div class="caso-card__lamina"><span class="caso-card__num">N.º ${c.numero}</span><div class="gota"></div></div>
-      <div class="caso-card__info"><h4>${c.titulo}</h4><span>Homicidio escenificado</span></div>
+      <div class="caso-card__info"><h4>${c.titulo}</h4><span>${c.etiqueta}</span></div>
     </div>`;
   }).join("");
 }
+let casoSeleccionadoId = null;
 function seleccionarCaso(id){
+  casoSeleccionadoId = id;
   renderGridCasos(id);
   const zona = document.getElementById("zona-detalle-caso");
-  if(id !== "telon-final"){ zona.innerHTML = ""; return; }
+  const c = CASOS_DISPONIBLES.find(x=>x.id===id);
+  const meta = CASOS_META[id];
+  if(!c || c.bloqueado || !meta){ zona.innerHTML = ""; return; }
   zona.innerHTML = `
     <div class="caso-detalle">
-      <div class="portada-expediente">N.º MB-07 — "TELÓN FINAL"</div>
-      <h3>La Sombra del Rey</h3>
-      <p class="portada-resumen" style="text-align:left; max-width:none;">La noche de clausura de <em>La Sombra del Rey</em>, en el Gran Teatro Muldrel, Elena Vasco Reyes apareció colgando en su propio despacho. La policía original cerró el caso como suicidio en 48 horas, presionada para evitar un escándalo. Su hermana encontró después algo que nadie había registrado como prueba. El expediente vuelve a abrirse.</p>
+      <div class="portada-expediente">N.º ${c.numero} — "${c.titulo.toUpperCase()}"</div>
+      <h3>${c.titulo}</h3>
+      <p class="portada-resumen" style="text-align:left; max-width:none;">${meta.resumen}</p>
       <div class="portada-meta" style="justify-content:flex-start; margin:14px 0 18px;">
-        <span class="chip">1–8 investigadores</span>
-        <span class="chip">2–3 horas</span>
-        <span class="chip">+16 años</span>
-        <span class="chip">Puerto Muldrel</span>
+        ${meta.meta.map(m=>`<span class="chip">${m}</span>`).join("")}
       </div>
       <div class="form-lobby">
         <label>Su nombre de investigador/a</label>
@@ -921,6 +1124,9 @@ function confirmarInicio(){
   estado.nombreJugador = nombre;
 
   if(estado.modoSala==="crear"){
+    estado.casoId = casoSeleccionadoId;
+    CASO = CASOS_POR_ID[casoSeleccionadoId];
+    estado.faseActual = 1;
     const num = parseInt(document.getElementById("input-num-jugadores").value, 10) || 1;
     estado.numJugadoresEsperados = Math.min(8, Math.max(1, num));
     estado.codigoSala = generarCodigoSala();
@@ -987,12 +1193,16 @@ function revisarInicioAutomatico(){
 let intervaloReloj = null;
 function comenzarPartidaReal(){
   clearInterval(intervaloEsperaPrevia);
+  if(estado.casoId && CASOS_POR_ID[estado.casoId]) CASO = CASOS_POR_ID[estado.casoId];
   audioMenu.pause();
   if(!sonidoSilenciado){ audioJuego.currentTime = 0; audioJuego.volume = 0.5; audioJuego.play().catch(()=>{}); }
   document.getElementById("sala-espera-previa").classList.remove("activo");
   document.getElementById("juego").classList.add("activo");
   window.scrollTo(0,0);
   document.getElementById("codigo-sala-visible").textContent = estado.codigoSala;
+  document.getElementById("topbarra-numero-caso").textContent = "EXPEDIENTE " + CASO.numero;
+  document.getElementById("topbarra-titulo-caso").textContent = CASO.tituloCorto.toUpperCase() + " · CONFIDENCIAL";
+  estado.tab = CASO.expediente ? "expediente" : "escena";
   estado.inicioTiempo = Date.now();
   intervaloReloj = setInterval(actualizarReloj, 1000);
   renderRail();
@@ -1026,26 +1236,29 @@ function formatoTiempo(s){
   return mm+":"+ss;
 }
 
-const PESTANAS = [
-  {id:"escena", label:"Escena"},
-  {id:"autopsia", label:"Autopsia"},
-  {id:"documentos", label:"Documentos"},
-  {id:"sospechosos", label:"Sospechosos"},
-  {id:"corcho", label:"Corcho"},
-  {id:"cuaderno", label:"Cuaderno"},
-  {id:"objetivos", label:"Objetivos"},
-  {id:"acusacion", label:"Acusación"}
-];
+function pestanasActuales(){
+  const t = [];
+  if(CASO.expediente) t.push({id:"expediente", label:"Expediente"});
+  else t.push({id:"escena", label:"Escena"}, {id:"autopsia", label:"Autopsia"}, {id:"documentos", label:"Documentos"});
+  t.push({id:"sospechosos", label:"Sospechosos"}, {id:"corcho", label:"Corcho"}, {id:"cuaderno", label:"Cuaderno"});
+  if(CASO.fases) t.push({id:"fases", label:"Fases"});
+  else t.push({id:"objetivos", label:"Objetivos"});
+  t.push({id:"acusacion", label:"Acusación"});
+  return t;
+}
 
 function cambiarTab(id){ estado.tab=id; renderRail(); renderPanel(); }
 
 function renderRail(){
   const rail = document.getElementById("rail");
-  rail.innerHTML = PESTANAS.map(p=>{
+  rail.innerHTML = pestanasActuales().map(p=>{
     let badge = "";
     if(p.id==="sospechosos"){
       const rotas = CASO.sospechosos.filter(s=>estado.confrontaciones[s.id]?.rota).length;
       if(rotas>0) badge = `<span class="badge-tab">${rotas} coartada(s) rota(s)</span>`;
+    }
+    if(p.id==="fases"){
+      badge = `<span class="badge-tab">Fase ${estado.faseActual} de ${CASO.fases.length}</span>`;
     }
     return `<button class="tab ${estado.tab===p.id?'activo':''}" onclick="cambiarTab('${p.id}')">${p.label}${badge}</button>`;
   }).join("");
@@ -1053,12 +1266,13 @@ function renderRail(){
 
 /* ================= RENDER POR PESTAÑA ================= */
 function renderPanel(){
-  if(document.getElementById("juego").classList.contains("activo")) guardarSala();
   const panel = document.getElementById("panel");
   if(estado.acusacionBloqueada){ panel.innerHTML = vistaEspera(); return; }
   if(estado.tab==="escena") panel.innerHTML = vistaEscena();
   else if(estado.tab==="autopsia") panel.innerHTML = vistaAutopsia();
   else if(estado.tab==="documentos") panel.innerHTML = vistaDocumentos();
+  else if(estado.tab==="expediente") panel.innerHTML = vistaExpediente();
+  else if(estado.tab==="fases") panel.innerHTML = vistaFases();
   else if(estado.tab==="sospechosos") panel.innerHTML = vistaSospechosos();
   else if(estado.tab==="corcho"){ panel.innerHTML = vistaCorcho(); dibujarCuerdas(); }
   else if(estado.tab==="cuaderno") panel.innerHTML = vistaCuaderno();
@@ -1100,7 +1314,7 @@ function vistaEscena(){
       }).join("")}
     </div>`;
 }
-function revelarHallazgo(id){ estado.hallazgosVistos[id]=true; renderPanel(); }
+function revelarHallazgo(id){ estado.hallazgosVistos[id]=true; guardarSala(); renderPanel(); }
 
 function vistaAutopsia(){
   const a = CASO.autopsia;
@@ -1116,7 +1330,7 @@ function vistaAutopsia(){
       ${todasVistas ? `<div class="doc" style="background:rgba(124,32,32,0.08); margin-top:14px;"><b>Conclusión forense:</b> ${a.conclusion}</div>` : `<p class="texto-suave" style="margin-top:10px;">Desclasifiquen todas las líneas para ver la conclusión forense.</p>`}
     </div>`;
 }
-function declasificar(i){ estado.autopsiaVista[i]=true; renderPanel(); }
+function declasificar(i){ estado.autopsiaVista[i]=true; guardarSala(); renderPanel(); }
 
 function vistaDocumentos(){
   const bloques = CASO.documentos.map(d=>{
@@ -1154,7 +1368,7 @@ function vistaDocumentos(){
 }
 function elegirCaligrafia(id){
   if(estado.caligrafiaElegida) return;
-  if(id === CASO.caligrafia.respuestaCorrecta){ estado.caligrafiaElegida = id; renderPanel(); return; }
+  if(id === CASO.caligrafia.respuestaCorrecta){ estado.caligrafiaElegida = id; guardarSala(); renderPanel(); return; }
   const panel = document.getElementById("panel");
   const zona = panel.querySelector(".doc:last-child");
   if(zona){
@@ -1164,6 +1378,74 @@ function elegirCaligrafia(id){
     zona.appendChild(aviso);
   }
 }
+
+function pruebaVisible(id){
+  if(!CASO.expediente) return true;
+  const e = CASO.expediente.find(x=>x.id===id);
+  return !e || e.fase <= estado.faseActual;
+}
+
+function vistaExpediente(){
+  const items = CASO.expediente.filter(e=>e.fase <= estado.faseActual);
+  const bloqueadas = CASO.expediente.length - items.length;
+  return `
+    <div class="doc">
+      <div class="doc-etiqueta">Expediente · fase ${estado.faseActual} de ${CASO.fases.length}</div>
+      <h3>Pruebas disponibles</h3>
+      <p class="texto-suave" style="color:#6b654c">Cada prueba tiene una lectura inicial obvia y otra que exige cruzarla con el resto. Pulsen "revelar" cuando crean tener la interpretación correcta.</p>
+      ${bloqueadas>0 ? `<p class="texto-suave" style="color:#6b654c">${bloqueadas} prueba(s) siguen selladas hasta avanzar de fase (pestaña Fases).</p>` : ""}
+    </div>
+    ${items.map(e=>{
+      const revelado = estado.hallazgosVistos[e.id];
+      return `<div class="doc">
+        <div class="doc-etiqueta">${e.id} · ${e.categoria} · ${e.fuente}</div>
+        <h3>${e.titulo}</h3>
+        <p><b>${e.resumenCorto}</b></p>
+        <p>${e.contenido}</p>
+        <p class="texto-suave" style="color:#6b654c"><i>Lectura inicial:</i> ${e.interpretacionInicial}</p>
+        ${revelado
+          ? `<div class="respuesta-suspecto positiva">${e.interpretacionCorrecta}</div>`
+          : `<button class="btn btn--pequeno" onclick="revelarHallazgo('${e.id}')">Revelar interpretación correcta</button>`}
+      </div>`;
+    }).join("")}
+  `;
+}
+
+function vistaFases(){
+  return CASO.fases.map(f=>{
+    if(f.numero > estado.faseActual){
+      return `<div class="doc" style="opacity:.5;"><div class="doc-etiqueta">Fase ${f.numero} de ${CASO.fases.length}</div><h3>🔒 ${f.titulo}</h3><p class="texto-suave" style="color:#6b654c">Sellada hasta completar la fase anterior.</p></div>`;
+    }
+    const guardado = estado.respuestasObjetivos["fase"+f.numero];
+    const superada = f.numero < estado.faseActual;
+    return `<div class="doc">
+      <div class="doc-etiqueta">Fase ${f.numero} de ${CASO.fases.length}${superada?' · superada':''}</div>
+      <h3>${f.titulo}</h3>
+      <p style="font-style:italic;">${f.briefing}</p>
+      <p><b>${f.pregunta}</b></p>
+      ${f.opciones.map((op,i)=>{
+        let cls="opcion";
+        if(guardado!==undefined){ if(i===f.correcta) cls+=" correcta"; else if(i===guardado.respuesta) cls+=" incorrecta"; }
+        return `<button class="${cls}" ${guardado!==undefined?'disabled':''} onclick="responderFase(${f.numero},${i})">${op}</button>`;
+      }).join("")}
+      ${guardado===undefined
+        ? `<p class="texto-suave" style="margin-top:6px;">Pista: ${f.pista}</p>`
+        : `<div class="respuesta-suspecto ${guardado.respuesta===f.correcta?'positiva':'negativa'}">${guardado.respuesta===f.correcta ? f.conclusion : 'Esa conclusión no resiste el cruce de pruebas. Revisen el expediente e inténtenlo de nuevo.'}</div>
+           ${guardado.respuesta!==f.correcta ? `<button class="btn btn--pequeno" style="margin-top:8px;" onclick="reintentarFase(${f.numero})">Reintentar</button>` : ""}`}
+    </div>`;
+  }).join("");
+}
+function responderFase(numero, i){
+  const fase = CASO.fases.find(f=>f.numero===numero);
+  estado.respuestasObjetivos["fase"+numero] = {respuesta:i};
+  if(i === fase.correcta && numero === estado.faseActual && numero < CASO.fases.length){
+    estado.faseActual = numero + 1;
+  }
+  guardarSala();
+  renderRail();
+  renderPanel();
+}
+function reintentarFase(numero){ delete estado.respuestasObjetivos["fase"+numero]; guardarSala(); renderPanel(); }
 
 function vistaSospechosos(){
   return `
@@ -1181,10 +1463,10 @@ function vistaSospechosos(){
           <div class="mugshot-info"><h4>${s.nombre}</h4><span>${s.rol}</span>${badge}</div>
         </div>`;
       }).join("")}
-      <div class="mugshot-card" onclick="abrirTestigo()">
+      ${CASO.testigo ? `<div class="mugshot-card" onclick="abrirTestigo()">
         <div class="mugshot-plate"><span class="mugshot-num">TESTIGO</span>${ICONO_BUSTO}</div>
         <div class="mugshot-info"><h4>${CASO.testigo.nombre}</h4><span>${CASO.testigo.rol}</span></div>
-      </div>
+      </div>` : ""}
     </div>`;
 }
 
@@ -1193,8 +1475,10 @@ function cerrarSospechoso(){ estado.sospechosoAbierto=null; renderPanel(); }
 function abrirTestigo(){ estado.testigoAbierto=true; estado.sospechosoAbierto=null; renderPanel(); }
 function cerrarTestigo(){ estado.testigoAbierto=false; renderPanel(); }
 
+function parConexion(str){ return str.split("::"); }
 function evidenciasConectadas(id){
   return estado.conexionesCorcho
+    .map(parConexion)
     .filter(([a,b])=> a===id || b===id)
     .map(([a,b])=> a===id? b : a)
     .filter(pid => CASO.pruebas.some(p=>p.id===pid));
@@ -1234,6 +1518,25 @@ function renderModalSospechoso(){
   let cuerpo;
   if(resuelto){
     cuerpo = `<div class="respuesta-suspecto ${conf.rota?'negativa':'positiva'}"><b>${conf.rota?'Confesión bajo presión':'Aclaración obtenida'}:</b> <span class="revelacion-texto">${s.revelacion}</span></div>`;
+  } else if(s.preguntas){
+    cuerpo = `<div class="stack">` + s.preguntas.map(p=>{
+      const est = conf.preguntas?.[p.id];
+      const puedeConfrontar = p.pruebaId && conectadas.includes(p.pruebaId) && !est?.conPrueba;
+      const bloqueadaPorCorcho = p.pruebaId && !est?.conPrueba && !conectadas.includes(p.pruebaId);
+      const nombrePrueba = p.pruebaId ? (CASO.pruebas.find(x=>x.id===p.pruebaId)?.nombre || p.pruebaId) : null;
+      let respuestaHtml = "";
+      if(est?.conPrueba) respuestaHtml = `<div class="respuesta-suspecto positiva">${p.respuestaConPrueba}</div>`;
+      else if(est?.mostrada) respuestaHtml = `<div class="respuesta-suspecto negativa">${p.respuestaSinPrueba}</div>`;
+      return `<div class="card-pregunta">
+        <p><b>${p.pregunta}</b></p>
+        ${respuestaHtml}
+        <div class="fila-modal">
+          ${!est?.mostrada ? `<button class="btn btn--pequeno" onclick="responderPregunta('${s.id}','${p.id}',false)">Preguntar</button>` : ""}
+          ${puedeConfrontar ? `<button class="btn btn--pequeno btn--sangre" onclick="responderPregunta('${s.id}','${p.id}',true)">Confrontar con ${nombrePrueba}</button>` : ""}
+          ${bloqueadaPorCorcho ? `<span class="texto-suave" style="color:#8a836a;">(conecten "${nombrePrueba}" en el corcho para poder confrontarlo)</span>` : ""}
+        </div>
+      </div>`;
+    }).join("") + `</div>`;
   } else {
     let usadas = [];
     if(s.pasos){ usadas = conf.parcial ? [s.pasos[0].evidencia] : []; }
@@ -1279,10 +1582,12 @@ function confrontar(sospechosoId, pruebaId){
     }
     if(indice === s.pasos.length-1){
       estado.confrontaciones[sospechosoId] = {rota:true};
+      guardarSala();
       renderRail(); renderModalSospechoso();
       escribirMaquina(document.querySelector(".revelacion-texto"), s.revelacion, 11);
     } else {
       estado.confrontaciones[sospechosoId] = {parcial:true};
+      guardarSala();
       renderRail(); renderModalSospechoso();
       escribirMaquina(document.querySelector(".parcial-texto"), paso.textoParcial, 11);
     }
@@ -1291,6 +1596,7 @@ function confrontar(sospechosoId, pruebaId){
 
   if(pruebaId === s.evidenciaClave){
     estado.confrontaciones[sospechosoId] = s.esCulpable ? {rota:true} : {aclarada:true};
+    guardarSala();
     renderRail(); renderModalSospechoso();
     escribirMaquina(document.querySelector(".revelacion-texto"), s.revelacion, 11);
     return;
@@ -1302,22 +1608,55 @@ function mostrarDeflexion(s){
   if(zona) zona.innerHTML = `<div class="respuesta-suspecto negativa">${s.stonewall}</div>`;
 }
 
+function preguntasResueltas(s, registro){
+  const conEvidencia = s.preguntas.filter(p=>p.pruebaId);
+  if(conEvidencia.length===0) return Object.keys(registro?.preguntas||{}).length >= s.preguntas.length;
+  return conEvidencia.every(p=> registro?.preguntas?.[p.id]?.conPrueba);
+}
+function responderPregunta(sospechosoId, preguntaId, conPrueba){
+  const s = CASO.sospechosos.find(x=>x.id===sospechosoId);
+  const pregunta = s.preguntas.find(p=>p.id===preguntaId);
+  if(conPrueba && (!pregunta.pruebaId || !evidenciasConectadas(sospechosoId).includes(pregunta.pruebaId))) return;
+
+  const actual = estado.confrontaciones[sospechosoId] || {};
+  const preguntas = {...(actual.preguntas||{})};
+  preguntas[preguntaId] = { mostrada:true, conPrueba: conPrueba || preguntas[preguntaId]?.conPrueba || false };
+  const registro = {...actual, preguntas};
+
+  if(preguntasResueltas(s, registro)){
+    if(s.esCulpable) registro.rota = true; else registro.aclarada = true;
+  }
+  estado.confrontaciones[sospechosoId] = registro;
+  guardarSala();
+  renderRail();
+  renderModalSospechoso();
+  if(registro.rota || registro.aclarada){
+    escribirMaquina(document.querySelector(".revelacion-texto"), s.revelacion, 8);
+  }
+}
+
 /* ---------- corcho ---------- */
-const PIN_POS = {
-  ricardo:{x:10,y:12}, marta:{x:30,y:12}, diego:{x:50,y:12}, carla:{x:70,y:12}, ivan:{x:90,y:12},
-  tela:{x:15,y:45}, copa:{x:35,y:45}, diario:{x:55,y:45}, bitacora_general:{x:75,y:45}, taxi:{x:93,y:45},
-  sofia:{x:50,y:80}
-};
-const ALIAS_CORCHO = {
-  tela:"Tela rasgada", copa:"Copa rota", diario:"Diario", bitacora_general:"Bitácora", taxi:"Recibo taxi"
-};
+function posicionesCorcho(){
+  const suspIds = CASO.sospechosos.map(s=>s.id).concat(CASO.testigo ? [CASO.testigo.id] : []);
+  const evidIds = (CASO.corchoEvidenciaIds || []).filter(pruebaVisible);
+  const pos = {};
+  suspIds.forEach((id,i)=>{ pos[id] = { x: (100/(suspIds.length+1))*(i+1), y: 13 }; });
+  const cols = Math.min(5, evidIds.length) || 1;
+  evidIds.forEach((id,i)=>{
+    const fila = Math.floor(i/cols), col = i%cols;
+    const enFila = Math.min(cols, evidIds.length - fila*cols);
+    pos[id] = { x: (100/(enFila+1))*(col+1), y: 47 + fila*32 };
+  });
+  return pos;
+}
 function vistaCorcho(){
+  const PIN_POS = posicionesCorcho();
   const pinesHtml = Object.entries(PIN_POS).map(([id,pos])=>{
     const s = CASO.sospechosos.find(x=>x.id===id);
-    const esTestigo = id==="sofia";
+    const esTestigo = CASO.testigo && id===CASO.testigo.id;
     const p = CASO.pruebas.find(x=>x.id===id);
-    const nombre = s ? s.nombre.split(" ")[0]+" "+s.nombre.split(" ")[1][0]+"." : esTestigo ? "Sofía L." : ALIAS_CORCHO[id];
-    const inicial = s ? s.nombre.split(" ").map(w=>w[0]).slice(0,2).join("") : esTestigo ? "SL" : p.nombre[0];
+    const nombre = s ? s.nombre.split(" ")[0]+" "+s.nombre.split(" ")[1][0]+"." : esTestigo ? CASO.testigo.nombre.split(" ")[0]+" "+CASO.testigo.nombre.split(" ")[1][0]+"." : p.nombre;
+    const inicial = s ? s.nombre.split(" ").map(w=>w[0]).slice(0,2).join("") : esTestigo ? CASO.testigo.nombre.split(" ").map(w=>w[0]).slice(0,2).join("") : (p.id.match(/^P\d+/) ? p.id : p.nombre[0]);
     const sel = estado.seleccionCorcho===id ? "seleccionado" : "";
     const claseFoto = (s||esTestigo) ? "" : "evidencia";
     return `<div class="pin ${sel}" style="left:${pos.x}%; top:${pos.y}%;" onclick="clicPin('${id}')">
@@ -1334,16 +1673,18 @@ function clicPin(id){
   if(!estado.seleccionCorcho){ estado.seleccionCorcho=id; renderPanel(); return; }
   if(estado.seleccionCorcho===id){ estado.seleccionCorcho=null; renderPanel(); return; }
   const a=estado.seleccionCorcho, b=id;
-  const idx = estado.conexionesCorcho.findIndex(c=>(c[0]===a&&c[1]===b)||(c[0]===b&&c[1]===a));
+  const idx = estado.conexionesCorcho.findIndex(c=>c===a+"::"+b || c===b+"::"+a);
   if(idx>=0) estado.conexionesCorcho.splice(idx,1);
-  else estado.conexionesCorcho.push([a,b]);
+  else estado.conexionesCorcho.push(a+"::"+b);
   estado.seleccionCorcho=null;
+  guardarSala();
   renderPanel();
 }
 function dibujarCuerdas(){
   const svg = document.getElementById("svg-cuerdas");
   if(!svg) return;
-  svg.innerHTML = estado.conexionesCorcho.map(([a,b])=>{
+  const PIN_POS = posicionesCorcho();
+  svg.innerHTML = estado.conexionesCorcho.map(parConexion).filter(([a,b])=>PIN_POS[a]&&PIN_POS[b]).map(([a,b])=>{
     const pa=PIN_POS[a], pb=PIN_POS[b];
     const mx=(pa.x+pb.x)/2, my=(pa.y+pb.y)/2 + 6;
     return `<path d="M ${pa.x} ${pa.y} Q ${mx} ${my} ${pb.x} ${pb.y}" stroke="#a53131" stroke-width="0.5" vector-effect="non-scaling-stroke" fill="none" opacity="0.85"/>`;
@@ -1391,36 +1732,53 @@ function vistaAcusacion(){
       <div class="aviso-bloqueo">Antes de acusar a alguien formalmente, completen su teoría del caso en la pestaña <b>Cuaderno</b> (al menos ${CASO.minCuaderno} caracteres). Un buen expediente no se cierra a la ligera.</div></div>`;
   }
   const ac = estado.acusacion;
+  const usaMetodo = !!CASO.metodoOpciones;
+  const usaHora = !!CASO.horaOpciones;
+  const listoParaEnviar = ac.sospechosoId && ac.motivoId && ac.pruebaIds.length
+    && (usaMetodo ? ac.metodoId : ac.armaId)
+    && (!usaHora || ac.horaId);
   return `
     <div class="doc">
       <div class="doc-etiqueta">Cierre del expediente</div>
       <h3>Acusación formal</h3>
-      <p>Elijan responsable, arma, motivo y al menos una prueba de respaldo.</p>
+      <p>Elijan responsable, ${usaMetodo?'método':'arma'}, motivo${usaHora?', hora':''} y al menos una prueba de respaldo.</p>
       <h4 style="margin:14px 0 6px;">¿Quién es el/la responsable?</h4>
       <div class="lista-elegible">
         ${CASO.sospechosos.map(s=>`<button class="elegible ${ac.sospechosoId===s.id?'marcado':''}" onclick="elegirAcusado('${s.id}')">${s.nombre}</button>`).join("")}
       </div>
+      ${usaMetodo ? `
+      <h4 style="margin:14px 0 6px;">¿Cómo ocurrió?</h4>
+      <div class="lista-elegible">
+        ${CASO.metodoOpciones.map(m=>`<button class="elegible ${ac.metodoId===m.id?'marcado':''}" onclick="elegirMetodo('${m.id}')">${m.texto}</button>`).join("")}
+      </div>` : `
       <h4 style="margin:14px 0 6px;">¿Con qué arma?</h4>
       <div class="lista-elegible">
         ${CASO.armasOpciones.map(id=>{
           const p = CASO.pruebas.find(x=>x.id===id);
           return `<button class="elegible ${ac.armaId===id?'marcado':''}" onclick="elegirArma('${id}')">${p.nombre}</button>`;
         }).join("")}
-      </div>
+      </div>`}
       <h4 style="margin:14px 0 6px;">¿Cuál fue el motivo?</h4>
       <div class="lista-elegible">
         ${CASO.motivos.map(m=>`<button class="elegible ${ac.motivoId===m.id?'marcado':''}" onclick="elegirMotivo('${m.id}')">${m.texto}</button>`).join("")}
       </div>
+      ${usaHora ? `
+      <h4 style="margin:14px 0 6px;">¿A qué hora ocurrió realmente?</h4>
+      <div class="lista-elegible">
+        ${CASO.horaOpciones.map(h=>`<button class="elegible ${ac.horaId===h.id?'marcado':''}" onclick="elegirHora('${h.id}')">${h.texto}</button>`).join("")}
+      </div>` : ""}
       <h4 style="margin:14px 0 6px;">Pruebas de respaldo (elijan al menos una)</h4>
       <div class="lista-elegible">
         ${CASO.pruebas.map(p=>`<button class="elegible ${ac.pruebaIds.includes(p.id)?'marcado-multi':''}" onclick="toggleEvidenciaAcusacion('${p.id}')">${p.nombre}</button>`).join("")}
       </div>
-      <button class="btn btn--sangre" style="margin-top:16px;" ${!(ac.sospechosoId&&ac.armaId&&ac.motivoId&&ac.pruebaIds.length) ? "disabled":""} onclick="confirmarAcusacion()">Presentar acusación formal</button>
+      <button class="btn btn--sangre" style="margin-top:16px;" ${!listoParaEnviar ? "disabled":""} onclick="confirmarAcusacion()">Presentar acusación formal</button>
       <p class="texto-suave" style="margin-top:10px;">Una vez presentada, no van a poder cambiarla — se les pedirá confirmar antes de cerrarla.</p>
     </div>`;
 }
 function elegirAcusado(id){ estado.acusacion.sospechosoId=id; renderPanel(); }
 function elegirArma(id){ estado.acusacion.armaId=id; renderPanel(); }
+function elegirMetodo(id){ estado.acusacion.metodoId=id; renderPanel(); }
+function elegirHora(id){ estado.acusacion.horaId=id; renderPanel(); }
 function elegirMotivo(id){ estado.acusacion.motivoId=id; renderPanel(); }
 function toggleEvidenciaAcusacion(id){
   const arr = estado.acusacion.pruebaIds;
@@ -1431,28 +1789,41 @@ function toggleEvidenciaAcusacion(id){
 
 function calcularResultado(){
   const ac = estado.acusacion;
+  const pesos = CASO.pesos;
   const detalle = [];
   let total = 0;
 
   const sospCorrecto = ac.sospechosoId === CASO.sospechosoCorrectoId;
   const confesionCulpable = estado.confrontaciones[CASO.sospechosoCorrectoId]?.rota;
-  if(sospCorrecto && confesionCulpable){ total+=40; detalle.push({label:"Sospechosa correcta, con confesión completa", puntos:40, ok:true}); }
-  else if(sospCorrecto){ total+=18; detalle.push({label:"Sospechosa correcta, pero sin confesión completa", puntos:18, ok:true}); }
+  if(sospCorrecto && confesionCulpable){ total+=pesos.responsable; detalle.push({label:"Responsable correcto/a, con confesión completa", puntos:pesos.responsable, ok:true}); }
+  else if(sospCorrecto){ total+=pesos.responsableSinConfesion; detalle.push({label:"Responsable correcto/a, pero sin confesión completa", puntos:pesos.responsableSinConfesion, ok:true}); }
   else { total-=15; const s=CASO.sospechosos.find(x=>x.id===ac.sospechosoId); detalle.push({label:`Acusaron a ${s.nombre}, inocente`, puntos:-15, ok:false}); }
 
-  const armaCorrecta = ac.armaId === CASO.armaCorrectaId;
-  if(armaCorrecta) total+=20;
-  detalle.push({label:"Arma homicida", puntos:armaCorrecta?20:0, ok:armaCorrecta});
+  if(CASO.metodoOpciones){
+    const metodoOk = CASO.metodoOpciones.find(m=>m.id===ac.metodoId)?.correcto;
+    if(metodoOk) total+=pesos.arma;
+    detalle.push({label:"Método", puntos:metodoOk?pesos.arma:0, ok:!!metodoOk});
+  } else {
+    const armaCorrecta = ac.armaId === CASO.armaCorrectaId;
+    if(armaCorrecta) total+=pesos.arma;
+    detalle.push({label:"Arma homicida", puntos:armaCorrecta?pesos.arma:0, ok:armaCorrecta});
+  }
 
   const motivo = CASO.motivos.find(m=>m.id===ac.motivoId);
   const motivoOk = !!motivo?.correcto;
-  if(motivoOk) total+=20;
-  detalle.push({label:"Motivo", puntos:motivoOk?20:0, ok:motivoOk});
+  if(motivoOk) total+=pesos.motivo;
+  detalle.push({label:"Motivo", puntos:motivoOk?pesos.motivo:0, ok:motivoOk});
+
+  if(CASO.horaOpciones){
+    const horaOk = CASO.horaOpciones.find(h=>h.id===ac.horaId)?.correcto;
+    if(horaOk) total+=pesos.hora;
+    detalle.push({label:"Hora real de los hechos", puntos:horaOk?pesos.hora:0, ok:!!horaOk});
+  }
 
   const validas = ac.pruebaIds.filter(id=>CASO.pruebasClave.includes(id));
-  const cuentan = Math.min(validas.length,2);
-  total += cuentan*10;
-  detalle.push({label:`${cuentan} prueba(s) de respaldo válidas`, puntos:cuentan*10, ok:cuentan>0});
+  const cuentan = Math.min(validas.length, pesos.maxPruebas);
+  total += cuentan*pesos.porPrueba;
+  detalle.push({label:`${cuentan} prueba(s) de respaldo válidas`, puntos:cuentan*pesos.porPrueba, ok:cuentan>0});
 
   total = Math.max(0, Math.min(100,total));
 
@@ -1468,8 +1839,11 @@ function calcularResultado(){
 function confirmarAcusacion(){
   const ac = estado.acusacion;
   const s = CASO.sospechosos.find(x=>x.id===ac.sospechosoId);
-  const arma = CASO.pruebas.find(x=>x.id===ac.armaId);
   const motivo = CASO.motivos.find(x=>x.id===ac.motivoId);
+  const metodoOhArma = CASO.metodoOpciones
+    ? CASO.metodoOpciones.find(x=>x.id===ac.metodoId)?.texto
+    : CASO.pruebas.find(x=>x.id===ac.armaId)?.nombre;
+  const horaHtml = CASO.horaOpciones ? `<br><b>Hora:</b> ${CASO.horaOpciones.find(h=>h.id===ac.horaId)?.texto}` : "";
 
   let existente = document.getElementById("modal-fondo");
   if(existente) existente.remove();
@@ -1481,8 +1855,8 @@ function confirmarAcusacion(){
       <p class="texto-suave">Revisen bien: después de confirmar, no van a poder volver a esta pestaña ni cambiar nada. El resultado no se conocerá hasta que ${estado.numJugadoresEsperados>1?'todas las personas de la ronda':'ustedes'} terminen.</p>
       <div class="testimonio" style="font-style:normal;">
         <b>Responsable:</b> ${s.nombre}<br>
-        <b>Arma:</b> ${arma.nombre}<br>
-        <b>Motivo:</b> ${motivo.texto}
+        <b>${CASO.metodoOpciones?'Método':'Arma'}:</b> ${metodoOhArma}<br>
+        <b>Motivo:</b> ${motivo.texto}${horaHtml}
       </div>
       <div class="fila-modal">
         <button class="btn btn--fantasma" onclick="document.getElementById('modal-fondo').remove()">Volver a revisar</button>
@@ -1565,7 +1939,7 @@ function vistaRanking(jugadores){
       <div class="doc">
         <div class="doc-etiqueta">Resolución real</div>
         <h3>El expediente cierra con...</h3>
-        <p><b>${culpable.nombre}</b> es la autora del homicidio de Elena Vasco Reyes.</p>
+        <p><b>${culpable.nombre}</b> ${culpable.autorFrase || "es la autora"} del homicidio de ${CASO.victima.nombre}.</p>
         <p>${culpable.revelacion}</p>
       </div>
       <div style="text-align:center;">
