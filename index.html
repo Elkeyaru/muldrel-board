@@ -1,0 +1,1350 @@
+<title>Expediente Muldrel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600;700&family=Caveat:wght@500;700&family=Reenie+Beanie&family=Homemade+Apple&family=Shadows+Into+Light&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0c09;
+    --ink-2:#14170f;
+    --ink-3:#1c2016;
+    --paper:#e6dcb8;
+    --paper-2:#d3c495;
+    --paper-3:#efe6c8;
+    --paper-ink:#211d12;
+    --paper-ink-soft:#5b543d;
+    --blood:#7c2020;
+    --blood-bright:#a53131;
+    --amber:#c98a2c;
+    --ok:#4c7a4c;
+    --line:#4a4a36;
+    --text:#dcd4b8;
+    --text-dim:#8f8b74;
+    --r-card:10px;
+    --r-btn:6px;
+    --r-pill:999px;
+    --shadow-card:0 1px 2px rgba(20,17,8,0.08), 0 10px 24px rgba(20,17,8,0.14);
+    --shadow-modal:0 30px 70px rgba(0,0,0,0.55);
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 1100px 900px at 50% 50%, transparent 45%, rgba(0,0,0,0.7) 100%),
+      var(--ink);
+    color:var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{font-family:'Anton',sans-serif; font-weight:400; letter-spacing:0.5px; text-wrap:balance; margin:0;}
+  p{line-height:1.7; margin:0 0 12px;}
+  p:last-child{margin-bottom:0;}
+  button{font-family:inherit;cursor:pointer;}
+  button:focus-visible, [tabindex]:focus-visible, textarea:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
+  ::selection{background:var(--blood); color:var(--paper);}
+
+  /* ---------- botones (base compartida) ---------- */
+  .btn, .opcion, .elegible, .evidencia-btn, .hallazgo{
+    border-radius:var(--r-btn);
+    transition:border-color .15s ease, background .15s ease, transform .1s ease, box-shadow .15s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+
+  .estampa{
+    display:inline-block; font-family:'Anton',sans-serif; letter-spacing:3px;
+    border:3px solid var(--blood-bright); color:var(--blood-bright);
+    padding:5px 16px; border-radius:3px; transform:rotate(-4deg); text-transform:uppercase;
+  }
+  .estampa--ambar{border-color:var(--amber); color:var(--amber);}
+
+  /* ---------- portada compartida ---------- */
+  .portada-marca{font-family:'IBM Plex Mono'; font-size:0.72rem; letter-spacing:4px; color:var(--text-dim); text-transform:uppercase;}
+  .portada-expediente{font-size:0.85rem; color:var(--amber); letter-spacing:1px;}
+  .portada-resumen{max-width:580px; color:var(--text); font-size:0.95rem; font-family:'Special Elite', monospace;}
+  .portada-meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center; font-size:0.7rem;color:var(--text-dim);}
+  .chip{border:1px solid var(--line); padding:4px 10px; border-radius:999px;}
+
+  /* ---------- gate (portón de entrada) ---------- */
+  #gate{
+    position:fixed; inset:0; background:var(--ink); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:100; flex-direction:column; gap:18px;
+  }
+  #gate .gota{width:16px; height:16px; margin:0 auto;}
+  #gate p{font-family:'IBM Plex Mono'; letter-spacing:3px; text-transform:uppercase; font-size:0.78rem; color:var(--text-dim); animation:pulso 2s ease-in-out infinite;}
+  @keyframes pulso{0%,100%{opacity:0.4} 50%{opacity:1}}
+
+  /* ---------- gota de sangre (motivo Dexter) ---------- */
+  .gota{width:22px; height:22px; background:var(--blood-bright); border-radius:50% 50% 50% 0; transform:rotate(45deg); box-shadow:0 3px 8px rgba(165,49,49,0.4);}
+
+  /* ---------- lámina de vidrio / muestra ---------- */
+  .lamina{
+    position:relative; width:min(260px,70vw); aspect-ratio:5/3; background:linear-gradient(160deg, rgba(255,255,255,0.14), rgba(255,255,255,0.02) 40%), #171a13;
+    border:1px solid rgba(238,241,236,0.25); border-radius:4px; transform:rotate(-3deg);
+    box-shadow:0 20px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(238,241,236,0.06);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .lamina::before{
+    content:""; position:absolute; top:0; left:14%; width:22%; height:100%;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,0.18), transparent);
+    transform:skewX(-18deg);
+  }
+  .lamina::after{
+    content:"MB-07 · MUESTRA"; position:absolute; bottom:8px; right:12px; font-family:'IBM Plex Mono';
+    font-size:0.55rem; letter-spacing:1.5px; color:rgba(238,241,236,0.4);
+  }
+  .lamina .gota{width:34px; height:34px; filter:blur(0.2px);}
+
+  /* ---------- menú ---------- */
+  #menu{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px 18px; text-align:center;}
+  #menu h1{font-size:clamp(2.6rem,10vw,5rem); color:var(--paper); line-height:0.92; position:relative; display:inline-block;}
+  #menu h1 .goteo{position:absolute; left:52%; bottom:-16px; width:6px; height:16px; background:var(--blood-bright); border-radius:0 0 50% 50%;}
+  .menu-tagline{font-family:'Special Elite'; font-size:0.85rem; color:var(--text-dim); max-width:420px;}
+
+  /* ---------- lobby ---------- */
+  #lobby{min-height:100vh; display:none; flex-direction:column; align-items:center; gap:28px; padding:48px 18px 70px; text-align:center;}
+  #lobby.activo{display:flex;}
+  .lobby-titulo{font-size:clamp(1.8rem,5vw,2.6rem); color:var(--paper);}
+  .grid-casos{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:18px; max-width:760px; width:100%;}
+  .caso-card{
+    background:var(--ink-2); border:1px solid var(--line); border-radius:var(--r-card); padding:0; overflow:hidden;
+    cursor:pointer; text-align:left; color:var(--text); transition:transform .15s ease, border-color .15s ease;
+  }
+  .caso-card:hover{transform:translateY(-3px); border-color:var(--amber);}
+  .caso-card.seleccionado{border-color:var(--blood-bright); box-shadow:0 0 0 1px var(--blood-bright);}
+  .caso-card__lamina{aspect-ratio:16/10; position:relative; background:linear-gradient(165deg, rgba(255,255,255,0.08), transparent 55%), var(--ink); display:flex; align-items:center; justify-content:center; border-bottom:1px solid var(--line);}
+  .caso-card__num{position:absolute; top:9px; left:10px; font-family:'IBM Plex Mono'; font-size:0.6rem; color:var(--text-dim); letter-spacing:1px;}
+  .caso-card__info{padding:14px 16px 16px;}
+  .caso-card__info h4{font-size:1.05rem; color:var(--paper); margin-bottom:4px;}
+  .caso-card__info span{font-size:0.72rem; color:var(--text-dim); display:block;}
+  .caso-card--bloqueado{cursor:not-allowed; opacity:0.55;}
+  .caso-card--bloqueado:hover{transform:none; border-color:var(--line);}
+  .caso-card--bloqueado .caso-card__lamina{filter:grayscale(1);}
+  .caso-detalle{max-width:600px; background:var(--ink-2); border:1px solid var(--line); border-radius:var(--r-card); padding:26px 28px; text-align:left; box-shadow:var(--shadow-card);}
+  .caso-detalle h3{color:var(--paper); font-size:1.6rem; margin-bottom:4px;}
+  .form-lobby{display:flex; flex-direction:column; gap:6px; margin:6px 0 16px;}
+  .form-lobby label{font-family:'IBM Plex Mono'; font-size:0.7rem; color:var(--amber); letter-spacing:0.5px; margin-top:6px;}
+  .input-lobby{
+    padding:11px 13px; border-radius:var(--r-btn); border:1px solid var(--line); background:var(--ink);
+    color:var(--text); font-family:'IBM Plex Mono'; font-size:0.9rem;
+  }
+  .input-lobby:focus-visible{outline:2px solid var(--amber);}
+  .lobby-volver{background:none; border:none; color:var(--text-dim); font-family:'IBM Plex Mono'; font-size:0.72rem; letter-spacing:1px; text-transform:uppercase;}
+
+  .btn-audio{
+    position:fixed; bottom:18px; right:18px; z-index:150; width:38px; height:38px; border-radius:50%;
+    background:var(--ink-2); border:1px solid var(--line); color:var(--text-dim); font-size:0.95rem;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .btn-audio:hover{border-color:var(--amber); color:var(--amber);}
+  .btn{
+    font-family:'IBM Plex Mono';font-weight:600; letter-spacing:1.5px;text-transform:uppercase;font-size:0.82rem;
+    padding:13px 26px;border:1px solid var(--amber); background:transparent;color:var(--amber);
+    box-shadow:0 1px 0 rgba(255,255,255,0.03) inset;
+  }
+  .btn:hover{background:var(--amber); color:var(--ink); transform:translateY(-1px);}
+  .btn--sangre{border-color:var(--blood-bright); color:var(--blood-bright);}
+  .btn--sangre:hover{background:var(--blood-bright); color:var(--paper);}
+  .btn--fantasma{border-color:var(--line); color:var(--text-dim);}
+  .btn--pequeno{padding:7px 14px; font-size:0.68rem; letter-spacing:1px;}
+  .btn:disabled{opacity:0.35; cursor:not-allowed; background:transparent; color:var(--amber); transform:none;}
+  .aviso-prototipo{max-width:540px; font-size:0.72rem; color:var(--text-dim); border-left:2px solid var(--line); padding:8px 12px; text-align:left;}
+
+  /* ---------- shell ---------- */
+  #juego{display:none; min-height:100vh; flex-direction:column;}
+  #juego.activo{display:flex;}
+  .topbarra{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:12px 18px; background:var(--ink-2); border-bottom:2px solid var(--line);
+    position:sticky; top:0; z-index:20; flex-wrap:wrap;
+  }
+  .topbarra-caso{font-family:'Anton'; letter-spacing:1px; color:var(--paper); font-size:1.1rem;}
+  .topbarra-caso small{display:block; font-family:'IBM Plex Mono'; font-size:0.62rem; color:var(--text-dim); letter-spacing:2px; font-weight:400;}
+  .topbarra-derecha{font-size:0.72rem; color:var(--text-dim); font-variant-numeric:tabular-nums;}
+  .reloj::before{content:"expediente abierto hace ";}
+
+  .cuerpo{display:flex; flex:1; min-height:0;}
+  .rail{display:flex; flex-direction:column; gap:4px; padding:18px 10px 18px 16px; background:var(--ink); flex:0 0 176px;}
+  .tab{
+    text-align:left; background:transparent; color:var(--text-dim); border:none; border-left:3px solid transparent;
+    padding:10px 12px; font-family:'IBM Plex Mono'; font-size:0.74rem; font-weight:600;
+    letter-spacing:0.5px; text-transform:uppercase; border-radius:0 6px 6px 0;
+  }
+  .tab:hover{background:var(--ink-3); color:var(--text);}
+  .tab.activo{background:var(--paper); color:var(--paper-ink); border-left-color:var(--blood-bright);}
+  .tab.activo:hover{background:var(--paper);}
+  .tab .badge-tab{display:block; font-size:0.58rem; color:var(--blood-bright); margin-top:3px; letter-spacing:0.3px; text-transform:none; font-weight:500;}
+  .tab.activo .badge-tab{color:var(--blood);}
+  .panel{flex:1; min-width:0; background:var(--paper); color:var(--paper-ink); padding:28px 28px 80px; overflow-y:auto;}
+  .panel > *{max-width:700px;}
+  .panel > .grid-sospechosos, .panel > .grid-pruebas, .panel > .corcho, .panel > .corcho-intro, .panel > .corcho-ayuda{max-width:none;}
+
+  @media (max-width:760px){
+    .cuerpo{flex-direction:column;}
+    .rail{flex-direction:row; flex:0 0 auto; overflow-x:auto; padding:10px 12px; gap:6px; -webkit-overflow-scrolling:touch;}
+    .tab{border-left:none; border-bottom:3px solid transparent; border-radius:6px 6px 0 0; flex:0 0 auto; white-space:nowrap;}
+    .tab.activo{border-bottom-color:var(--blood-bright);}
+    .panel{padding:18px 16px 60px;}
+  }
+
+  /* ---------- documentos ---------- */
+  .doc{
+    background:#f1e9cc; border:1px solid rgba(33,29,18,0.12); border-radius:var(--r-card); padding:22px 24px; margin-bottom:18px;
+    box-shadow:var(--shadow-card);
+  }
+  .doc h3{font-size:1.2rem; color:var(--blood); margin-bottom:12px;}
+  .doc-etiqueta{
+    display:inline-block; font-family:'IBM Plex Mono'; font-size:0.62rem; font-weight:700;
+    letter-spacing:1.5px; text-transform:uppercase; color:var(--paper-ink-soft);
+    background:rgba(33,29,18,0.06); padding:3px 10px; border-radius:var(--r-pill); margin-bottom:12px;
+  }
+  .doc p{font-family:'Special Elite',monospace; font-size:0.9rem;}
+  .doc-fuente{font-size:0.68rem; color:#8a836a; margin-top:10px; font-family:'IBM Plex Mono';}
+
+  .hallazgo{
+    display:block; width:100%; text-align:left; background:#e9dfbd; border:1px solid rgba(33,29,18,0.16);
+    padding:13px 15px; margin-bottom:8px; color:var(--paper-ink);
+    font-family:'IBM Plex Mono'; font-size:0.85rem; font-weight:600; box-shadow:0 1px 2px rgba(33,29,18,0.06);
+  }
+  .hallazgo:hover{border-color:var(--blood); transform:translateY(-1px); box-shadow:0 4px 10px rgba(33,29,18,0.12);}
+  .hallazgo.visto{background:#f1e9cc; border-color:var(--blood);}
+  .hallazgo-texto{font-family:'Special Elite',monospace; font-weight:400; font-size:0.85rem; margin-top:8px; max-height:0; overflow:hidden; transition:max-height .35s ease;}
+  .hallazgo.visto .hallazgo-texto{max-height:260px;}
+
+  .redactado{
+    background:#0c0c0c; color:transparent; border-radius:var(--r-btn); padding:10px 14px; margin:7px 0;
+    cursor:pointer; user-select:none; font-family:'Special Elite'; font-size:0.85rem;
+  }
+  .redactado::after{content:"pulsa para desclasificar"; color:#7a7a7a; font-family:'IBM Plex Mono'; font-size:0.65rem; letter-spacing:1px;}
+  .redactado.visible{background:transparent; color:var(--paper-ink); cursor:default;}
+  .redactado.visible::after{content:none;}
+
+  .escena-header{position:relative; background:#0a0a08; border-radius:var(--r-card); overflow:hidden; margin-bottom:18px; min-height:150px; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-card);}
+  .cinta-policial{position:absolute; left:-10%; width:120%; height:22px; background:repeating-linear-gradient(45deg,#c98a2c 0 16px,#100e08 16px 32px); opacity:0.92; top:-2px; transform:rotate(-2deg);}
+  .cinta-policial.abajo{top:auto; bottom:-2px; transform:rotate(1.5deg);}
+  .silueta-tiza{display:block; width:min(220px,55%); opacity:0.8;}
+
+  .lista-notas{list-style:none; padding:0; margin:0;}
+  .lista-notas li{
+    font-family:'Caveat', cursive; font-size:1.35rem; color:#3a3320; background:#efe6c8;
+    border:1px solid rgba(33,29,18,0.13); padding:12px 16px; margin-bottom:9px; border-radius:var(--r-btn);
+    box-shadow:0 1px 2px rgba(33,29,18,0.06); transform:rotate(-0.5deg);
+  }
+  .lista-notas li:nth-child(even){transform:rotate(0.5deg);}
+
+  .lista-diario{list-style:none; padding:0; margin:0;}
+  .lista-diario li{margin-bottom:14px; padding-left:12px; border-left:3px solid rgba(124,32,32,0.4);}
+  .lista-diario .fecha{display:block; font-family:'IBM Plex Mono'; font-size:0.68rem; color:#8a836a; margin-bottom:3px; letter-spacing:0.5px;}
+  .lista-diario p{font-style:italic;}
+
+  .bitacora-linea{font-family:'IBM Plex Mono'; font-size:0.82rem; padding:5px 0; border-bottom:1px dashed rgba(33,29,18,0.15);}
+  .bitacora-linea b{color:var(--blood);}
+
+  /* caligrafía */
+  .caligrafia-muestra{
+    background:#efe6c8; border:1px solid rgba(33,29,18,0.15); padding:14px 16px; border-radius:var(--r-card); margin-bottom:10px;
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  }
+  .caligrafia-muestra .firma{font-size:1.4rem; flex:1; min-width:200px;}
+  .f-marta{font-family:'Reenie Beanie', cursive;}
+  .f-carla{font-family:'Homemade Apple', cursive;}
+  .f-ricardo{font-family:'Shadows Into Light', cursive;}
+  .f-diego{font-family:'Nanum Pen Script', cursive;}
+  .f-sofia{font-family:'Caveat', cursive;}
+  .f-ivan{font-family:'IBM Plex Mono'; letter-spacing:0.5px; font-size:0.95rem !important;}
+  .caligrafia-boton{flex:0 0 auto; white-space:nowrap;}
+
+  /* sospechosos */
+  .grid-sospechosos{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px;}
+  .mugshot-card{background:var(--ink-2); border:1px solid var(--line); border-radius:var(--r-card); overflow:hidden; cursor:pointer; transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease; color:var(--text);}
+  .mugshot-card:hover{transform:translateY(-3px); border-color:var(--amber); box-shadow:0 12px 26px rgba(0,0,0,0.4);}
+  .mugshot-plate{aspect-ratio:4/5; position:relative; background:repeating-linear-gradient(to top, rgba(255,255,255,0.04) 0 1px, transparent 1px 22px), var(--ink); display:flex; align-items:center; justify-content:center; border-bottom:3px solid var(--amber);}
+  .mugshot-silueta{width:52%; opacity:0.5; color:#4a4a36;}
+  .mugshot-num{position:absolute; top:9px; left:10px; font-size:0.6rem; color:var(--text-dim); letter-spacing:1px;}
+  .mugshot-info{padding:12px 14px 14px;}
+  .mugshot-info h4{font-size:1.02rem; color:var(--paper); letter-spacing:0.3px; line-height:1.2;}
+  .mugshot-info span{font-size:0.72rem; color:var(--text-dim); display:block; margin-top:3px;}
+  .badge-estado{display:inline-block; margin-top:9px; font-size:0.6rem; letter-spacing:0.6px; text-transform:uppercase; padding:3px 9px; border-radius:var(--r-pill);}
+  .badge-estado--sospecha{background:rgba(201,138,44,0.18); color:var(--amber); border:1px solid var(--amber);}
+  .badge-estado--roto{background:rgba(124,32,32,0.22); color:var(--blood-bright); border:1px solid var(--blood-bright);}
+  .badge-estado--parcial{background:rgba(201,138,44,0.14); color:var(--amber); border:1px solid var(--amber);}
+
+  .modal-fondo{position:fixed; inset:0; background:rgba(4,4,2,0.82); display:flex; align-items:flex-start; justify-content:center; padding:24px 12px; overflow-y:auto; z-index:60;}
+  .modal{background:#f1e9cc; color:var(--paper-ink); max-width:660px; width:100%; border-radius:var(--r-card); padding:28px 28px 26px; margin-top:24px; box-shadow:var(--shadow-modal);}
+  .modal-cerrar{float:right; background:rgba(33,29,18,0.06); border:none; width:30px; height:30px; border-radius:50%; font-size:1.1rem; color:var(--paper-ink-soft); line-height:1;}
+  .modal-cerrar:hover{background:rgba(33,29,18,0.14);}
+  .modal h3{font-size:1.5rem; color:var(--blood); margin-bottom:4px;}
+  .testimonio{background:#e9dfbd; border-left:4px solid var(--paper-ink); padding:14px 16px; border-radius:0 var(--r-btn) var(--r-btn) 0; font-family:'Special Elite'; font-style:italic; font-size:0.88rem; margin:14px 0;}
+  .evidencia-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px; margin:12px 0;}
+  .evidencia-btn{background:#e2d6ab; border:1px solid rgba(33,29,18,0.22); padding:10px 12px; font-family:'IBM Plex Mono'; font-size:0.72rem; font-weight:600; text-align:left; color:var(--paper-ink); box-shadow:0 1px 2px rgba(33,29,18,0.06);}
+  .evidencia-btn:hover{border-color:var(--blood); transform:translateY(-1px);}
+  .respuesta-suspecto{margin-top:14px; padding:14px 16px; border-radius:0 var(--r-btn) var(--r-btn) 0; font-family:'Special Elite'; font-style:italic; font-size:0.88rem;}
+  .respuesta-suspecto.negativa{background:rgba(124,32,32,0.1); border-left:4px solid var(--blood);}
+  .respuesta-suspecto.positiva{background:rgba(76,122,76,0.12); border-left:4px solid var(--ok);}
+  .sin-conexion{background:rgba(33,29,18,0.05); border:1px dashed rgba(33,29,18,0.28); padding:14px 16px; border-radius:var(--r-btn); font-size:0.85rem;}
+  .fila-modal{display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;}
+
+  .grid-pruebas{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px;}
+  .prueba-card{background:#e9dfbd; border:1px solid rgba(33,29,18,0.18); border-radius:var(--r-btn); padding:13px 14px; box-shadow:0 1px 2px rgba(33,29,18,0.06);}
+  .prueba-card b{font-size:0.85rem;}
+  .prueba-card span{display:block; font-size:0.68rem; color:var(--text-dim); margin-top:3px; text-transform:uppercase; letter-spacing:0.5px;}
+
+  .corcho-intro{font-family:'Special Elite'; font-size:0.85rem; margin-bottom:12px;}
+  .corcho{position:relative; background:#6b4a28; border:10px solid #4a3119; border-radius:var(--r-card); min-height:560px; background-image:repeating-linear-gradient(115deg, rgba(0,0,0,0.05) 0 2px, transparent 2px 5px); box-shadow:inset 0 0 40px rgba(0,0,0,0.35); overflow:hidden;}
+  .pin{position:absolute; width:clamp(60px,16vw,88px); transform:translate(-50%,-50%); text-align:center; cursor:pointer; font-family:'IBM Plex Mono'; font-size:0.58rem; color:#2b2210; z-index:2; transition:transform .15s ease;}
+  .pin:hover{transform:translate(-50%,-50%) translateY(-2px);}
+  .pin:hover, .pin.seleccionado{ z-index:5; }
+  .pin-foto{width:52px; height:52px; border-radius:5px; margin:0 auto 5px; background:#f1e9cc; border:3px solid #fff; box-shadow:0 6px 14px rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; font-family:'Anton'; font-size:1.05rem; color:var(--paper-ink); position:relative;}
+  .pin-foto.evidencia{background:#f4eebc;}
+  .pin-foto::before{content:""; position:absolute; top:-7px; left:50%; transform:translateX(-50%); width:11px; height:11px; border-radius:50%; background:var(--blood-bright); box-shadow:0 2px 3px rgba(0,0,0,0.5), inset 0 -2px 2px rgba(0,0,0,0.25);}
+  .pin.seleccionado .pin-foto{outline:3px solid var(--amber); outline-offset:1px;}
+  .pin-etiqueta{background:rgba(0,0,0,0.6); color:#f1e9cc; padding:2px 6px; border-radius:3px; display:inline-block;}
+  .corcho svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1;}
+  .corcho-ayuda{font-size:0.7rem; color:var(--text-dim); margin-top:10px;}
+
+  .opcion{display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:8px; background:#e9dfbd; border:1px solid rgba(33,29,18,0.22); font-family:'IBM Plex Mono'; font-size:0.82rem; color:var(--paper-ink); box-shadow:0 1px 2px rgba(33,29,18,0.06);}
+  .opcion:hover{border-color:var(--blood); transform:translateY(-1px);}
+  .opcion.correcta{background:rgba(76,122,76,0.25); border-color:var(--ok); transform:none;}
+  .opcion.incorrecta{background:rgba(124,32,32,0.2); border-color:var(--blood); transform:none;}
+  .opcion:disabled{cursor:default;}
+
+  .lista-elegible{display:flex; flex-direction:column; gap:7px; margin-bottom:18px;}
+  .elegible{padding:11px 14px; background:#e9dfbd; border:1px solid rgba(33,29,18,0.22); font-family:'IBM Plex Mono'; font-size:0.82rem; text-align:left; color:var(--paper-ink); box-shadow:0 1px 2px rgba(33,29,18,0.06);}
+  .elegible:hover{border-color:var(--blood); transform:translateY(-1px);}
+  .elegible.marcado{background:var(--blood); color:var(--paper); border-color:var(--blood); transform:none;}
+  .elegible.marcado-multi{background:rgba(124,32,32,0.35); border-color:var(--blood); transform:none;}
+
+  .cuaderno-area{width:100%; min-height:180px; background:#efe6c8; border:1px solid rgba(33,29,18,0.22); border-radius:var(--r-card); padding:16px; font-family:'Special Elite'; font-size:0.9rem; color:var(--paper-ink); resize:vertical; box-shadow:var(--shadow-card);}
+  .cuaderno-contador{font-size:0.72rem; color:#8a836a; margin-top:8px;}
+  .aviso-bloqueo{background:rgba(124,32,32,0.08); border:1px dashed var(--blood); padding:16px 18px; border-radius:var(--r-btn); font-size:0.88rem;}
+
+  .veredicto-panel{background:#f1e9cc; color:var(--paper-ink); border-radius:var(--r-card); padding:36px 28px 28px; text-align:center; box-shadow:var(--shadow-modal);}
+  .puntaje-grande{font-family:'Anton'; font-size:4.4rem; color:var(--blood); line-height:1;}
+  .detalle-fila{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(33,29,18,0.15); font-size:0.85rem; font-family:'IBM Plex Mono';}
+  .detalle-fila span:last-child{font-weight:700;}
+  .detalle-fila.ok span:last-child{color:var(--ok);}
+  .detalle-fila.no span:last-child{color:var(--blood);}
+
+  .stack{display:flex; flex-direction:column; gap:14px;}
+  .texto-suave{color:var(--text-dim); font-size:0.8rem;}
+</style>
+
+<audio id="audio-menu" src="evidence-under-glass.mp3" loop preload="none"></audio>
+<audio id="audio-juego" src="left-on-the-threshold.mp3" loop preload="none"></audio>
+<button class="btn-audio" id="btn-audio" onclick="alternarSonido()" aria-label="Silenciar música" title="Silenciar música">🔊</button>
+
+<div id="gate" onclick="entrarPorElGate()">
+  <div class="gota"></div>
+  <p>Toca para comenzar</p>
+</div>
+
+<div id="menu">
+  <div class="portada-marca">Muldrel Board · prototipo visual</div>
+  <div class="lamina"><div class="gota"></div></div>
+  <h1>EXPEDIENTE<br>MULDREL<span class="goteo"></span></h1>
+  <p class="menu-tagline">Algunos rituales no dejan huellas. Este dejó una gota bajo el vidrio, esperando a que alguien la mirara con calma.</p>
+  <button class="btn btn--sangre" onclick="irALobby()">Entrar</button>
+</div>
+
+<div id="lobby">
+  <div class="portada-marca">Selección de expediente</div>
+  <h2 class="lobby-titulo">¿Qué caso van a abrir?</h2>
+  <div class="grid-casos" id="grid-casos"></div>
+  <div id="zona-detalle-caso"></div>
+</div>
+
+<div id="juego">
+  <div class="topbarra">
+    <div class="topbarra-caso">EXPEDIENTE MB-07<small>TELÓN FINAL · CONFIDENCIAL</small></div>
+    <div class="topbarra-derecha"><span class="reloj" id="reloj">00:00</span></div>
+  </div>
+  <div class="cuerpo">
+    <nav class="rail" id="rail"></nav>
+    <div class="panel" id="panel"></div>
+  </div>
+</div>
+
+<script>
+/* ================= DATOS DEL CASO ================= */
+const CASO = {
+  victima:{
+    nombre:"Elena Vasco Reyes", edad:47, cargo:"Directora artística y productora del Gran Teatro Muldrel",
+    hallazgo:"Hallada a las 00:10 h por el utilero Diego Hurtado, colgando de una cuerda de tramoya atada a una viga de su despacho, tras bambalinas.",
+    retrato:"Reconstruyó el Gran Teatro Muldrel de la ruina económica en doce años hasta convertirlo en el orgullo cultural de Puerto Muldrel. Puertas adentro tenía otra reputación: cada temporada elegía a alguien — 'su proyecto' — lo acercaba hasta hacerlo indispensable, y luego lo humillaba en el momento exacto en que más dolía. Nadie hablaba de eso en público. Todos lo sabían."
+  },
+  hallazgosEscena:[
+    {id:"puerta", titulo:"Puerta del despacho", texto:"Sin signos de forzamiento. La cerradura estaba intacta. Solo existen tres llaves maestras registradas: la de la víctima, la del socio Iván Roth y la del jefe de mantenimiento."},
+    {id:"escritorio", titulo:"Estado del escritorio", texto:"Ordenado con una precisión antinatural — cada carpeta alineada, cada bolígrafo en su sitio — excepto la copa rota junto a la pata de la silla. Quien reordenó la escena después del golpe lo hizo con calma. No hay ningún otro signo de pánico en la habitación."},
+    {id:"silla", titulo:"Silla volcada", texto:"A 40 cm de la posición esperada si la víctima se hubiera subido a ella para colgarse. La trayectoria de caída no cuadra con un salto desde esa silla."},
+    {id:"trofeo", titulo:"Trofeo 'Cándido de Honor'", texto:"Estatuilla de bronce de 2.3 kg, hallada en su estante habitual. Mella reciente en el borde. Bajo luz UV se detecta un halo de sangre limpiada de forma incompleta con disolvente de utilería."},
+    {id:"copa", titulo:"Copa de vino rota", texto:"Fragmentos junto al escritorio. Dos juegos de huellas: las de la víctima y una huella parcial de pulgar, no identificada en el hallazgo inicial."},
+    {id:"tela", titulo:"Fragmento de tela", texto:"3x2 cm, enganchado en la bisagra superior de la puerta. Gabardina forrada, coincide con el forro de una chaqueta de vestuario de 'La Sombra del Rey' — la que usa Ricardo Elizondo en escena."},
+    {id:"reloj_pulsera", titulo:"Reloj de pulsera de la víctima", texto:"Detenido a las 23:24, cristal roto. Coincide con la ventana de corte de la cámara del pasillo."},
+    {id:"camara", titulo:"Cámara del pasillo", texto:"Corte de señal entre las 23:12 y las 23:28 (16 min). El sistema se opera solo desde la cabina de control, a cargo del técnico de turno esa noche."}
+  ],
+  autopsia:{
+    horaMuerte:"Entre las 23:15 y las 23:35",
+    hallazgos:[
+      "Fractura hundimiento en el hueso occipital, con bordes vitales: el golpe se dio con la víctima aún con vida.",
+      "El surco de la cuerda en el cuello NO presenta reacción vital: sin hemorragia subcutánea ni petequias — no hubo ahorcamiento en vida.",
+      "Hioides intacto: compatible con golpe contundente previo y ahorcamiento post mortem, no con estrangulamiento manual.",
+      "Livideces parcialmente fijas en espalda y glúteos: el cuerpo estuvo tendido boca arriba al menos 15–20 min antes de ser colgado.",
+      "El objeto causante es romo, de canto curvo: compatible en peso y radio con la base del trofeo 'Cándido de Honor'."
+    ],
+    conclusion:"Elena Vasco Reyes fue golpeada en la nuca mientras vivía. Minutos después, ya muerta o agonizante, su cuerpo fue colgado con calma para simular un suicidio. Quien lo hizo tuvo tiempo — y la cabeza fría — para ordenar la habitación después."
+  },
+  documentos:[
+    {
+      id:"diario", categoria:"Documento personal", titulo:"Diario de Elena Vasco Reyes",
+      tipo:"lista-diario",
+      entradas:[
+        {fecha:"3 semanas antes", texto:"R. otra vez con temblores en el segundo acto. Si sigue así lo reemplazo y que la clínica se ocupe de él, no yo."},
+        {fecha:"2 semanas antes", texto:"Alguien dejó algo en mi correo del camerino. Sé quién es. Sé exactamente quién es. Qué patético seguir ahí después de tanto tiempo."},
+        {fecha:"1 semana antes", texto:"C. cree que no me he dado cuenta de lo que está tramando con su abogado. Que lo intente. El contrato es mío, lo redacté yo."},
+        {fecha:"La noche anterior", texto:"M. lloró hoy. Otra vez. Diez años y todavía cree que un día voy a decir que sí. Es casi tierno. Casi."}
+      ]
+    },
+    {
+      id:"notas_anonimas", categoria:"Documento personal", titulo:"Cinco notas anónimas, recibidas en tres semanas",
+      tipo:"lista-notas",
+      lista:[
+        "Todavía usas el mismo perfume de siempre. Algunas cosas no cambian aunque uno quiera.",
+        "Sé que odias los lirios. Los pusiste en el vestíbulo igual, solo para probar que podías tocarlos sin que te temblara la mano.",
+        "¿Todavía recuerdas lo que me dijiste en julio, hace seis años? Yo sí. Palabra por palabra.",
+        "No quiero que tengas miedo. Solo quiero que sepas que alguien te ve de verdad, no como todos los demás.",
+        "Pronto vas a entender por qué volví."
+      ]
+    },
+    {
+      id:"bitacora_general", categoria:"Registro de seguridad", titulo:"Bitácora de acceso nocturno",
+      tipo:"bitacora",
+      lineas:[
+        "21:40 — Personal de producción sale por la puerta lateral, en grupo, sin registro individual.",
+        "22:47 — <b>C. Núñez</b> firma su salida.",
+        "23:02 — Visitante no registrado ingresa por el callejón de carga. El guardia anota solo: 'hombre, chaqueta gris, dijo venir por Diego H.'",
+        "23:12 — <b>I. Roth</b> firma su salida.",
+        "23:38 — <b>I. Roth</b> firma su reingreso, 26 minutos después, sin motivo anotado.",
+        "00:07 — <b>D. Hurtado</b> activa la alarma de emergencia."
+      ]
+    },
+    {
+      id:"registro_telefonico", categoria:"Registro técnico", titulo:"Registro telefónico de la víctima — noche del crimen",
+      tipo:"bitacora",
+      lineas:[
+        "22:15 — Llamada saliente a Carla Núñez, 4 minutos.",
+        "22:50 — Llamada entrante de 'I.R.', 11 minutos, cortada de forma abrupta.",
+        "23:05 — Mensaje sin enviar, guardado en borradores: «Necesito hablar contigo esta noche. Última vez que te lo pido.» Destinatario no especificado."
+      ]
+    },
+    {
+      id:"extracto_financiero", categoria:"Documento", titulo:"Extracto financiero del Gran Teatro Muldrel",
+      tipo:"texto",
+      texto:"Las regalías de la obra 'Últimas Luces' (Carla Núñez, 2019) fueron reasignadas en un 60% a partir de 2021 bajo el concepto 'revisión de dirección: E. Vasco', sin firma de coautoría en el contrato original. — Cláusula 14-B del acuerdo de sociedad: si un socio fallece sin testamento expreso, su participación pasa automáticamente al socio con mayoría restante. Elena Vasco Reyes no dejó testamento. Iván Roth Bassan posee el otro 35% y quedaría como único socio activo."
+    },
+    {
+      id:"carta_abogado", categoria:"Documento personal", titulo:"Borrador de carta, Carla Núñez a su abogado (no enviada)",
+      tipo:"texto",
+      texto:"«...llevo dos años documentando cada reescritura. Cuando esto salga a la luz no va a ser solo un problema legal para ella, va a ser el fin de su nombre en esta ciudad. Necesito que me digas si puedo esperar hasta después del estreno o si ya es tarde para esperar nada.»"
+    },
+    {
+      id:"guion_anotado", categoria:"Documento personal", titulo:"Guion anotado — letra de Ricardo Elizondo",
+      tipo:"texto",
+      texto:"En el margen de la escena III, junto a sus líneas: «recordar tomar la pastilla ANTES no después» y, subrayado dos veces: «ella dijo que si fallo esta noche no hay más recetas.»"
+    },
+    {
+      id:"taxi", categoria:"Documento", titulo:"Recibo de taxi — Carla Núñez",
+      tipo:"texto",
+      texto:"Recogida registrada a las 23:35 en la puerta lateral del teatro — 45 minutos después de la hora en que Carla declaró haberse marchado."
+    }
+  ],
+  caligrafia:{
+    intro:"Las cinco notas anónimas están escritas a mano. Comparen los trazos con la hoja de firmas del personal para ver si alguna coincide.",
+    muestras:[
+      {id:"marta", nombre:"Marta Solé Ibarra", clase:"f-marta", texto:"Firma conforme — M. Solé Ibarra"},
+      {id:"carla", nombre:"Carla Núñez Farías", clase:"f-carla", texto:"Firma conforme — C. Núñez Farías"},
+      {id:"ricardo", nombre:"Ricardo Elizondo Vega", clase:"f-ricardo", texto:"Firma conforme — R. Elizondo Vega"},
+      {id:"diego", nombre:"Diego Hurtado Castro", clase:"f-diego", texto:"Firma conforme — D. Hurtado Castro"},
+      {id:"ivan", nombre:"Iván Roth Bassan", clase:"f-ivan", texto:"FIRMA CONFORME — I. ROTH BASSAN (mecanografiada, según costumbre)"},
+      {id:"sofia", nombre:"Sofía Lira Bran, practicante", clase:"f-sofia", texto:"Firma conforme — S. Lira Bran"}
+    ],
+    respuestaCorrecta:"sofia"
+  },
+  sospechosos:[
+    {
+      id:"ricardo", nombre:"Ricardo Elizondo Vega", edad:54, rol:"Actor principal",
+      relacion:"Trabaja con Elena desde hace quince años. Depende de un tratamiento con ansiolíticos que ella, a través de un contacto médico, le administraba de forma no oficial: recetas que aparecían y desaparecían según su humor hacia él. Era un secreto que ambos protegían.",
+      testimonio:"«Terminé la función. Saludé. 'El rey no llora dos veces' — ¿conoce el verso? Me lo repito cuando necesito sostenerme. Fui a mi camerino. No salí. No hablé con nadie. No salí hasta que Diego gritó.»",
+      coartada:"Dice haber estado solo en su camerino desde el final de la función.",
+      sospechaInicial:true,
+      evidenciaClave:"tela",
+      stonewall:"«Ya dije lo que tenía que decir. No voy a repetirlo solo porque usted insista.»",
+      revelacion:"Confiesa que sí fue al despacho, pero antes de la función, hacia las 19:30, a suplicarle a Elena que no le retirara la receta de esa semana. Ella se negó «para que sintiera lo que se siente sin nada sosteniéndote», y él, desesperado, dio un portazo al salir — la chaqueta se rasgó en la bisagra. No volvió. No tenía la entereza ni el motivo para matarla: la necesitaba viva más que a nadie en el edificio.",
+      estadoTrasRevelar:"Coartada aclarada — dependía de ella para vivir, no tenía motivo para su muerte"
+    },
+    {
+      id:"marta", nombre:"Marta Solé Ibarra", edad:36, rol:"Subdirectora y asistente de dirección",
+      relacion:"Elena la sacó de una escuela de provincia hace diez años y la convirtió en su 'proyecto': la hizo sentir elegida, indispensable, y nunca del todo suficiente. Diez años esperando un ascenso que Elena jamás pensó concederle.",
+      testimonio:"«Después de la función estuve con Ricardo, repasando notas, en el pasillo de camerinos. No me separé de él ni un minuto, desde que bajó el telón hasta que se armó todo. Con Elena hablé un momento esa tarde. Nada fuera de lo normal.»",
+      coartada:"Dice haber estado con Ricardo todo el tiempo tras la función.",
+      sospechaInicial:false,
+      stonewall:"«Se lo repito: estuve con Ricardo. Pregúntenle a él.»",
+      pasos:[
+        {evidencia:"copa", textoParcial:"Reconoce, a regañadientes, que estuvo un momento en el despacho: «una copa, nada más, para cerrar la temporada en paz». Sigue negando cualquier violencia e insiste en que se fue antes de las 23:00. Su versión ya no cuadra con la de Ricardo — pero todavía se aferra a ella."},
+        {evidencia:"diario"}
+      ],
+      revelacion:"Al leerle la entrada del diario donde Elena la llama 'casi tierna' por seguir esperando, algo en Marta se rompe. Confiesa que la conversación de las 23:15 terminó con Elena diciéndole, sin ningún filtro, que jamás pensaba ascenderla — que le gustaba tenerla necesitada, que 'las que dependen tanto son las que mejor trabajan'. Marta tomó el trofeo del estante más cercano y la golpeó una vez en la nuca. Describe lo que hizo después — reordenar el escritorio, atar la cuerda, limpiar el trofeo, escribir una nota falsa sobre las cuentas para desviar la sospecha hacia Carla — no como una decisión, sino como algo que simplemente ocurrió, 'pieza por pieza, como se monta un decorado'.",
+      estadoTrasRevelar:"Coartada rota — confesión completa",
+      esCulpable:true
+    },
+    {
+      id:"diego", nombre:"Diego Hurtado Castro", edad:31, rol:"Técnico de sonido y luces",
+      relacion:"Debe una cantidad considerable a un prestamista informal. Esa semana los cobradores empezaron a presentarse en su casa — y, por primera vez, en el teatro.",
+      testimonio:"«Estuve en la cabina. Toda la noche. La cámara se cortó sola, ya había fallado antes. Bajé cuando terminó todo, a avisar que podíamos apagar. Encontré a la señora Vasco así.»",
+      coartada:"Dice haber estado solo en la cabina de control toda la noche.",
+      sospechaInicial:false,
+      evidenciaClave:"bitacora_general",
+      stonewall:"«No sé de qué visitante habla. El guardia se equivoca seguido con los nombres.»",
+      revelacion:"Confiesa, con la voz quebrada, que el 'visitante' era un cobrador que llegó buscándolo directamente al teatro — algo que nunca había pasado, y que lo aterró más que cualquier interrogatorio policial. Cortó la cámara esa noche no para encubrir un crimen, sino para sacar equipo de sonido del inventario y venderlo esa misma madrugada, antes de que el cobrador volviera. Sin relación con la muerte de Elena — aunque admite que, de haber sabido lo que iba a encontrar al bajar, no habría tocado nada.",
+      estadoTrasRevelar:"Coartada aclarada — pánico propio, ajeno al crimen"
+    },
+    {
+      id:"carla", nombre:"Carla Núñez Farías", edad:44, rol:"Dramaturga y socia minoritaria",
+      relacion:"Elena llevaba años reescribiendo escenas centrales de sus obras y presentándolas como reinterpretaciones propias, respaldada por un contrato que ella misma redactó. Carla llevaba dos años documentando cada caso en secreto.",
+      testimonio:"«Me fui a las 22:50, en cuanto bajó el telón. Tenía jaqueca. Tomé un taxi a casa.»",
+      coartada:"Dice haber tomado un taxi a casa a las 22:50.",
+      sospechaInicial:false,
+      evidenciaClave:"taxi",
+      stonewall:"«Ya entregué el recibo. No hay nada más que decir sobre esos minutos.»",
+      revelacion:"Confiesa que esos 45 minutos los pasó en el bar de la esquina, terminando de redactar a mano los últimos párrafos de la carta a su abogado. Necesitaba estar segura de cada palabra antes de firmarla, y no quería que nadie —ni siquiera él— supiera que había estado ahí esa noche hasta que todo fuera oficial. Sin relación con el homicidio.",
+      estadoTrasRevelar:"Coartada aclarada — motivo real, ajeno al crimen"
+    },
+    {
+      id:"ivan", nombre:"Iván Roth Bassan", edad:52, rol:"Ex marido de la víctima y socio del teatro (35%)",
+      relacion:"Matrimonio de nueve años que terminó cuando, según él mismo admite sin que se lo pregunten, 'dejó de sernos útil seguir casados'. Se refiere a Elena siempre como 'la señora Vasco Reyes', nunca por su nombre de pila.",
+      testimonio:"«Firmé mi salida a las 23:12. Fui a buscar algo a mi auto, en el estacionamiento de atrás. Volví a entrar porque olvidé mi maletín en la oficina de administración. Eso es todo.»",
+      coartada:"Dice haber salido a las 23:12 y haber vuelto solo por un maletín olvidado.",
+      sospechaInicial:false,
+      evidenciaClave:"bitacora_general",
+      stonewall:"«Ya expliqué lo del maletín. No entiendo qué más necesita de mí.»",
+      revelacion:"Confiesa que sí volvió a entrar, pero no por ningún maletín: quería confrontar a Elena por última vez sobre una revisión del acuerdo de sociedad que ella se negaba a firmar — necesitaba liquidez y ella lo sabía. Llegó hasta el pasillo de camerinos, escuchó voces alteradas viniendo del despacho, y por primera vez en nueve años decidió no interrumpir. Se fue sin verla con vida. Sin saberlo, confirma que había alguien más en el despacho a esa hora.",
+      estadoTrasRevelar:"Coartada aclarada — corrobora presencia de un tercero, sin relación directa con el golpe"
+    }
+  ],
+  testigo:{
+    id:"sofia", nombre:"Sofía Lira Bran", edad:22, rol:"Acomodadora y practicante (apellido materno)",
+    testimonio:"«Yo solo acomodo sillas y reparto programas. No sé nada de lo que pasa arriba, en dirección.»",
+    revelacion:"Hace seis años, en un taller de verano, Elena la humilló frente a todo el grupo, llamándola «un desperdicio de tiempo para los que sí tienen algo que ofrecer», y la echó del programa esa misma tarde. Volvió al teatro bajo su apellido materno, como practicante, solo para estar cerca. Las notas no eran amenazas: eran, en su cabeza, una forma retorcida de decir «me hiciste daño y aun así sigo aquí, mírame». Nunca planeó lastimarla. Se entera de su muerte al mismo tiempo que todos, y su devastación es real — no es la asesina. Es el eco de otra clase de daño que Elena dejó a su paso, más silencioso que un crimen, pero igual de real."
+  },
+  pruebas:[
+    {id:"trofeo", nombre:"Trofeo 'Cándido de Honor'", tipo:"Arma homicida"},
+    {id:"copa", nombre:"Huella de pulgar en la copa", tipo:"Evidencia física"},
+    {id:"tela", nombre:"Fragmento de tela", tipo:"Evidencia física"},
+    {id:"reloj_pulsera", nombre:"Reloj detenido a las 23:24", tipo:"Evidencia física"},
+    {id:"camara", nombre:"Corte de cámara de seguridad", tipo:"Registro técnico"},
+    {id:"autopsia", nombre:"Informe de autopsia", tipo:"Informe forense"},
+    {id:"diario", nombre:"Diario de Elena Vasco Reyes", tipo:"Documento personal"},
+    {id:"notas_anonimas", nombre:"Notas anónimas", tipo:"Documento personal"},
+    {id:"bitacora_general", nombre:"Bitácora de acceso nocturno", tipo:"Registro de seguridad"},
+    {id:"registro_telefonico", nombre:"Registro telefónico", tipo:"Registro técnico"},
+    {id:"extracto_financiero", nombre:"Extracto financiero", tipo:"Documento"},
+    {id:"carta_abogado", nombre:"Borrador de carta de Carla", tipo:"Documento personal"},
+    {id:"guion_anotado", nombre:"Guion anotado de Ricardo", tipo:"Documento personal"},
+    {id:"taxi", nombre:"Recibo de taxi de Carla", tipo:"Documento"}
+  ],
+  objetivos:[
+    {
+      id:"obj1", titulo:"Objetivo 1 · La escena no cuadra",
+      pregunta:"Según la escena y la autopsia, ¿qué ocurrió realmente con Elena Vasco Reyes?",
+      opciones:[
+        "Se suicidó ahorcándose en su despacho.",
+        "Ricardo la estranguló con las manos durante un forcejeo.",
+        "Fue golpeada en la nuca con un objeto contundente y luego colgada para simular un suicidio.",
+        "Se cayó accidentalmente y se golpeó la cabeza contra el escritorio."
+      ],
+      correcta:2,
+      pista:"Comparen las heridas 'vitales' (con la víctima viva) contra las 'post mortem' del informe forense."
+    },
+    {
+      id:"obj2", titulo:"Objetivo 2 · Las coartadas se rompen",
+      pregunta:"¿Qué dos coartadas se contradicen frontalmente sobre dónde estuvieron tras la función?",
+      opciones:["Diego e Iván","Ricardo y Diego","Marta y Ricardo","Carla y Marta"],
+      correcta:2,
+      pista:"Uno dice haber estado 'solo'. La otra persona dice haber estado 'con él todo el tiempo'. No pueden ser ambas ciertas."
+    },
+    {
+      id:"obj3", titulo:"Objetivo 3 · Una calma que inquieta",
+      pregunta:"El escritorio estaba ordenado con precisión casi antinatural tras el golpe. ¿Qué sugiere eso sobre quien lo hizo?",
+      opciones:[
+        "Actuó en un arrebato de pánico y huyó de inmediato.",
+        "Actuó con una calma inquietante: tuvo tiempo y cabeza fría para reorganizar la escena después.",
+        "No estuvo involucrado en absoluto; alguien más ordenó después.",
+        "El desorden nunca existió; es un error del informe."
+      ],
+      correcta:1,
+      pista:"Piensen cuánto tiempo toma atar una cuerda de tramoya, limpiar un objeto y acomodar una habitación entera. El pánico no suele dejar tiempo para eso."
+    }
+  ],
+  motivos:[
+    {id:"m1", texto:"Una década de manipulación emocional que se rompió de golpe.", correcto:true},
+    {id:"m2", texto:"Necesidad urgente de liquidez y una cláusula societaria a su favor.", correcto:false},
+    {id:"m3", texto:"Años de plagio artístico a punto de salir a la luz.", correcto:false},
+    {id:"m4", texto:"Deudas con un prestamista y pánico por su propia seguridad.", correcto:false},
+    {id:"m5", texto:"Dependencia médica que la propia víctima usaba para controlar.", correcto:false}
+  ],
+  armasOpciones:["trofeo","copa","reloj_pulsera"],
+  sospechosoCorrectoId:"marta",
+  armaCorrectaId:"trofeo",
+  pruebasClave:["copa","diario","trofeo"],
+  minCuaderno:120
+};
+
+const ICONO_BUSTO = `<svg class="mugshot-silueta" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="36" r="19"/><path d="M50 60c-24 0-38 14-38 32v4h76v-4c0-18-14-32-38-32z"/></svg>`;
+
+/* ================= ESTADO ================= */
+const estado = {
+  tab:"escena",
+  hallazgosVistos:{},
+  autopsiaVista:{},
+  sospechosoAbierto:null,
+  testigoAbierto:false,
+  confrontaciones:{}, // id -> {parcial}|{rota}|{aclarada}
+  seleccionCorcho:null,
+  conexionesCorcho:[],
+  caligrafiaElegida:null,
+  cuaderno:"",
+  respuestasObjetivos:{},
+  acusacion:{sospechosoId:null, armaId:null, motivoId:null, pruebaIds:[]},
+  inicioTiempo:null,
+  nombreJugador:"",
+  numJugadoresEsperados:1,
+  acusacionBloqueada:false,
+  tiempoFinalSeg:null,
+  revelarForzado:false
+};
+
+/* ================= SALA COMPARTIDA (misma investigación entre pestañas) ================= */
+const SALA_KEY = "muldrel_sala_v1";
+const JUGADORES_KEY = "muldrel_jugadores_v1";
+
+function idJugador(){
+  let id = sessionStorage.getItem("muldrel_pid");
+  if(!id){ id = "p_" + Math.random().toString(36).slice(2,9); sessionStorage.setItem("muldrel_pid", id); }
+  return id;
+}
+function guardarSala(){
+  const compartido = {
+    hallazgosVistos: estado.hallazgosVistos,
+    autopsiaVista: estado.autopsiaVista,
+    confrontaciones: estado.confrontaciones,
+    conexionesCorcho: estado.conexionesCorcho,
+    caligrafiaElegida: estado.caligrafiaElegida,
+    numJugadoresEsperados: estado.numJugadoresEsperados
+  };
+  localStorage.setItem(SALA_KEY, JSON.stringify(compartido));
+}
+function cargarSala(){
+  const raw = localStorage.getItem(SALA_KEY);
+  if(!raw) return;
+  const d = JSON.parse(raw);
+  Object.assign(estado, d);
+}
+function guardarResultadoJugador(resultado){
+  const todos = JSON.parse(localStorage.getItem(JUGADORES_KEY) || "{}");
+  todos[idJugador()] = resultado;
+  localStorage.setItem(JUGADORES_KEY, JSON.stringify(todos));
+}
+function leerJugadores(){
+  return JSON.parse(localStorage.getItem(JUGADORES_KEY) || "{}");
+}
+window.addEventListener("storage", (e)=>{
+  if(e.key===SALA_KEY && document.getElementById("juego").classList.contains("activo") && !estado.acusacionBloqueada){
+    cargarSala();
+    renderRail();
+    renderPanel();
+  }
+  if(e.key===JUGADORES_KEY && estado.acusacionBloqueada){
+    renderPanel();
+  }
+});
+
+/* ================= UTILIDADES ================= */
+/* ================= GATE · MENÚ · LOBBY ================= */
+const audioMenu = document.getElementById("audio-menu");
+const audioJuego = document.getElementById("audio-juego");
+let sonidoSilenciado = false;
+
+function entrarPorElGate(){
+  document.getElementById("gate").style.display = "none";
+  if(!sonidoSilenciado){ audioMenu.volume = 0.55; audioMenu.play().catch(()=>{}); }
+}
+function alternarSonido(){
+  sonidoSilenciado = !sonidoSilenciado;
+  document.getElementById("btn-audio").textContent = sonidoSilenciado ? "🔇" : "🔊";
+  if(sonidoSilenciado){ audioMenu.pause(); audioJuego.pause(); }
+  else {
+    const activo = document.getElementById("lobby").classList.contains("activo") || document.getElementById("menu").style.display!=="none" ? audioMenu : audioJuego;
+    activo.play().catch(()=>{});
+  }
+}
+
+const CASOS_DISPONIBLES = [
+  { id:"telon-final", numero:"MB-07", titulo:"Telón Final", bloqueado:false },
+  { id:"proximo-1", numero:"MB-08", titulo:"Próximamente", bloqueado:true },
+  { id:"proximo-2", numero:"MB-09", titulo:"Próximamente", bloqueado:true }
+];
+
+function irALobby(){
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("lobby").classList.add("activo");
+  window.scrollTo(0,0);
+  renderGridCasos();
+}
+function renderGridCasos(seleccionadoId){
+  const grid = document.getElementById("grid-casos");
+  grid.innerHTML = CASOS_DISPONIBLES.map(c=>{
+    if(c.bloqueado){
+      return `<div class="caso-card caso-card--bloqueado">
+        <div class="caso-card__lamina"><span class="caso-card__num">N.º ${c.numero}</span><div class="gota" style="opacity:.3"></div></div>
+        <div class="caso-card__info"><h4>${c.titulo}</h4><span>Expediente sellado</span></div>
+      </div>`;
+    }
+    return `<div class="caso-card ${seleccionadoId===c.id?'seleccionado':''}" onclick="seleccionarCaso('${c.id}')">
+      <div class="caso-card__lamina"><span class="caso-card__num">N.º ${c.numero}</span><div class="gota"></div></div>
+      <div class="caso-card__info"><h4>${c.titulo}</h4><span>Homicidio escenificado</span></div>
+    </div>`;
+  }).join("");
+}
+function seleccionarCaso(id){
+  renderGridCasos(id);
+  const zona = document.getElementById("zona-detalle-caso");
+  if(id !== "telon-final"){ zona.innerHTML = ""; return; }
+  zona.innerHTML = `
+    <div class="caso-detalle">
+      <div class="portada-expediente">N.º MB-07 — "TELÓN FINAL"</div>
+      <h3>La Sombra del Rey</h3>
+      <p class="portada-resumen" style="text-align:left; max-width:none;">La noche de clausura de <em>La Sombra del Rey</em>, en el Gran Teatro Muldrel, Elena Vasco Reyes apareció colgando en su propio despacho. La policía original cerró el caso como suicidio en 48 horas, presionada para evitar un escándalo. Su hermana encontró después algo que nadie había registrado como prueba. El expediente vuelve a abrirse.</p>
+      <div class="portada-meta" style="justify-content:flex-start; margin:14px 0 18px;">
+        <span class="chip">1–8 investigadores</span>
+        <span class="chip">2–3 horas</span>
+        <span class="chip">+16 años</span>
+        <span class="chip">Puerto Muldrel</span>
+      </div>
+      <div class="form-lobby">
+        <label>Su nombre de investigador/a</label>
+        <input class="input-lobby" id="input-nombre" placeholder="Ej: Detective Ramírez" maxlength="24" oninput="validarFormLobby()">
+        <label>¿Cuántas personas van a jugar esta ronda?</label>
+        <input class="input-lobby" id="input-num-jugadores" type="number" min="1" max="8" value="1" oninput="validarFormLobby()">
+        <p class="texto-suave" style="text-align:left;">El veredicto no se revela hasta que todas hayan presentado su acusación — cada quien investiga y acusa por su cuenta, y al final se arma un ranking.</p>
+      </div>
+      <button class="btn btn--sangre" id="btn-abrir-carpeta" onclick="confirmarInicio()" disabled>Abrir la carpeta</button>
+      <p class="aviso-prototipo" style="margin-top:16px;">Prototipo pensado para probarse abriendo esta misma página en varias pestañas del navegador (una por investigador/a): la investigación se comparte y cada quien presenta su propia acusación al final.</p>
+    </div>`;
+  validarFormLobby();
+}
+function validarFormLobby(){
+  const nombre = document.getElementById("input-nombre")?.value.trim();
+  const btn = document.getElementById("btn-abrir-carpeta");
+  if(btn) btn.disabled = !nombre;
+}
+function confirmarInicio(){
+  const nombre = document.getElementById("input-nombre").value.trim();
+  if(!nombre) return;
+  estado.nombreJugador = nombre;
+  const num = parseInt(document.getElementById("input-num-jugadores").value, 10) || 1;
+  estado.numJugadoresEsperados = Math.min(8, Math.max(1, num));
+  iniciarJuego();
+}
+
+let intervaloReloj = null;
+function iniciarJuego(){
+  audioMenu.pause();
+  if(!sonidoSilenciado){ audioJuego.currentTime = 0; audioJuego.volume = 0.5; audioJuego.play().catch(()=>{}); }
+  document.getElementById("lobby").classList.remove("activo");
+  document.getElementById("juego").classList.add("activo");
+  window.scrollTo(0,0);
+  cargarSala();
+  guardarSala();
+  estado.inicioTiempo = Date.now();
+  intervaloReloj = setInterval(actualizarReloj, 1000);
+  renderRail();
+  renderPanel();
+}
+function escribirMaquina(el, texto, velocidad){
+  if(!el) return;
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){ el.textContent = texto; return; }
+  el.textContent = "";
+  let i = 0;
+  const t = setInterval(()=>{
+    el.textContent += texto[i];
+    i++;
+    if(i>=texto.length) clearInterval(t);
+  }, velocidad||12);
+}
+function actualizarReloj(){
+  if(!estado.inicioTiempo || estado.acusacionBloqueada) return;
+  const s = Math.floor((Date.now()-estado.inicioTiempo)/1000);
+  pintarReloj(s);
+}
+function pintarReloj(s){
+  const mm = String(Math.floor(s/60)).padStart(2,"0");
+  const ss = String(s%60).padStart(2,"0");
+  const el = document.getElementById("reloj");
+  if(el) el.textContent = mm+":"+ss;
+}
+function formatoTiempo(s){
+  const mm = String(Math.floor(s/60)).padStart(2,"0");
+  const ss = String(s%60).padStart(2,"0");
+  return mm+":"+ss;
+}
+
+const PESTANAS = [
+  {id:"escena", label:"Escena"},
+  {id:"autopsia", label:"Autopsia"},
+  {id:"documentos", label:"Documentos"},
+  {id:"sospechosos", label:"Sospechosos"},
+  {id:"corcho", label:"Corcho"},
+  {id:"cuaderno", label:"Cuaderno"},
+  {id:"objetivos", label:"Objetivos"},
+  {id:"acusacion", label:"Acusación"}
+];
+
+function cambiarTab(id){ estado.tab=id; renderRail(); renderPanel(); }
+
+function renderRail(){
+  const rail = document.getElementById("rail");
+  rail.innerHTML = PESTANAS.map(p=>{
+    let badge = "";
+    if(p.id==="sospechosos"){
+      const rotas = CASO.sospechosos.filter(s=>estado.confrontaciones[s.id]?.rota).length;
+      if(rotas>0) badge = `<span class="badge-tab">${rotas} coartada(s) rota(s)</span>`;
+    }
+    return `<button class="tab ${estado.tab===p.id?'activo':''}" onclick="cambiarTab('${p.id}')">${p.label}${badge}</button>`;
+  }).join("");
+}
+
+/* ================= RENDER POR PESTAÑA ================= */
+function renderPanel(){
+  if(document.getElementById("juego").classList.contains("activo")) guardarSala();
+  const panel = document.getElementById("panel");
+  if(estado.acusacionBloqueada){ panel.innerHTML = vistaEspera(); return; }
+  if(estado.tab==="escena") panel.innerHTML = vistaEscena();
+  else if(estado.tab==="autopsia") panel.innerHTML = vistaAutopsia();
+  else if(estado.tab==="documentos") panel.innerHTML = vistaDocumentos();
+  else if(estado.tab==="sospechosos") panel.innerHTML = vistaSospechosos();
+  else if(estado.tab==="corcho"){ panel.innerHTML = vistaCorcho(); dibujarCuerdas(); }
+  else if(estado.tab==="cuaderno") panel.innerHTML = vistaCuaderno();
+  else if(estado.tab==="objetivos") panel.innerHTML = vistaObjetivos();
+  else if(estado.tab==="acusacion") panel.innerHTML = vistaAcusacion();
+
+  if(estado.sospechosoAbierto) renderModalSospechoso();
+  else if(estado.testigoAbierto) renderModalTestigo();
+  else { const m = document.getElementById("modal-fondo"); if(m) m.remove(); }
+}
+
+function vistaEscena(){
+  const v = CASO.victima;
+  return `
+    <div class="escena-header">
+      <div class="cinta-policial"></div>
+      <svg class="silueta-tiza" viewBox="0 0 200 130" xmlns="http://www.w3.org/2000/svg">
+        <path d="M78,20 C86,20 92,26 92,34 C92,40 89,45 84,48 L100,58 L122,50 L138,66 L118,74 L128,110 L108,116 L100,88 L92,116 L72,112 L80,74 L58,64 L66,44 C60,40 57,36 57,30 C57,24 62,20 78,20 Z" fill="none" stroke="#e6dcb8" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <div class="cinta-policial abajo"></div>
+    </div>
+    <div class="doc">
+      <div class="doc-etiqueta">Víctima</div>
+      <h3>${v.nombre}, ${v.edad} años</h3>
+      <p><b>${v.cargo}</b></p>
+      <p>${v.hallazgo}</p>
+      <p style="margin-top:10px;">${v.retrato}</p>
+    </div>
+    <div class="doc">
+      <div class="doc-etiqueta">Policía científica · despacho de dirección</div>
+      <h3>Escena del crimen</h3>
+      <p class="texto-suave" style="color:#6b654c">Toquen cada hallazgo para examinarlo.</p>
+      ${CASO.hallazgosEscena.map(h=>{
+        const visto = estado.hallazgosVistos[h.id];
+        return `<button class="hallazgo ${visto?'visto':''}" onclick="revelarHallazgo('${h.id}')">
+          ${h.titulo}
+          <div class="hallazgo-texto">${h.texto}</div>
+        </button>`;
+      }).join("")}
+    </div>`;
+}
+function revelarHallazgo(id){ estado.hallazgosVistos[id]=true; renderPanel(); }
+
+function vistaAutopsia(){
+  const a = CASO.autopsia;
+  const todasVistas = a.hallazgos.every((_,i)=>estado.autopsiaVista[i]);
+  return `
+    <div class="doc">
+      <div class="doc-etiqueta">Informe forense · Dra. B. Ontaneda</div>
+      <h3>Autopsia</h3>
+      <p><b>Hora estimada de la muerte:</b> ${a.horaMuerte}</p>
+      <p style="font-style:italic">Reportado a prensa como "asfixia por suspensión, compatible con suicidio".</p>
+      <p class="texto-suave" style="color:#6b654c">Pulsen cada línea clasificada para desclasificarla.</p>
+      ${a.hallazgos.map((h,i)=>`<div class="redactado ${estado.autopsiaVista[i]?'visible':''}" onclick="declasificar(${i})">${h}</div>`).join("")}
+      ${todasVistas ? `<div class="doc" style="background:rgba(124,32,32,0.08); margin-top:14px;"><b>Conclusión forense:</b> ${a.conclusion}</div>` : `<p class="texto-suave" style="margin-top:10px;">Desclasifiquen todas las líneas para ver la conclusión forense.</p>`}
+    </div>`;
+}
+function declasificar(i){ estado.autopsiaVista[i]=true; renderPanel(); }
+
+function vistaDocumentos(){
+  const bloques = CASO.documentos.map(d=>{
+    let cuerpo = "";
+    if(d.tipo==="lista-diario"){
+      cuerpo = `<ul class="lista-diario">${d.entradas.map(e=>`<li><span class="fecha">${e.fecha}</span><p>«${e.texto}»</p></li>`).join("")}</ul>`;
+    } else if(d.tipo==="lista-notas"){
+      cuerpo = `<ul class="lista-notas">${d.lista.map(n=>`<li>${n}</li>`).join("")}</ul>`;
+    } else if(d.tipo==="bitacora"){
+      cuerpo = d.lineas.map(l=>`<div class="bitacora-linea">${l}</div>`).join("");
+    } else {
+      cuerpo = `<p>${d.texto}</p>`;
+    }
+    return `<div class="doc"><div class="doc-etiqueta">${d.categoria}</div><h3>${d.titulo}</h3>${cuerpo}</div>`;
+  }).join("");
+
+  const cal = CASO.caligrafia;
+  const acierto = estado.caligrafiaElegida === cal.respuestaCorrecta;
+  const caligrafiaBloque = `
+    <div class="doc">
+      <div class="doc-etiqueta">Cotejo de caligrafía</div>
+      <h3>Hoja de firmas del personal</h3>
+      <p>${cal.intro}</p>
+      ${cal.muestras.map(m=>`
+        <div class="caligrafia-muestra">
+          <div class="firma ${m.clase}">${m.texto}</div>
+          ${estado.caligrafiaElegida ? "" : `<button class="btn btn--pequeno caligrafia-boton" onclick="elegirCaligrafia('${m.id}')">¿Coincide con las notas?</button>`}
+        </div>`).join("")}
+      ${estado.caligrafiaElegida ? `<div class="respuesta-suspecto ${acierto?'positiva':'negativa'}">
+        ${acierto ? "<b>Coincide.</b> " + CASO.testigo.revelacion : "No coincide del todo — las curvas y el ángulo de la letra son distintos. Vuelvan a mirar con más calma."}
+      </div>` : ""}
+    </div>`;
+
+  return bloques + caligrafiaBloque;
+}
+function elegirCaligrafia(id){
+  if(estado.caligrafiaElegida) return;
+  if(id === CASO.caligrafia.respuestaCorrecta){ estado.caligrafiaElegida = id; renderPanel(); return; }
+  const panel = document.getElementById("panel");
+  const zona = panel.querySelector(".doc:last-child");
+  if(zona){
+    const aviso = document.createElement("div");
+    aviso.className = "respuesta-suspecto negativa";
+    aviso.textContent = "No coincide del todo — las curvas y el ángulo de la letra son distintos. Prueben con otra persona.";
+    zona.appendChild(aviso);
+  }
+}
+
+function vistaSospechosos(){
+  return `
+    <p class="texto-suave" style="margin-bottom:12px;">Interroguen a cada sospechoso. Para presentarles una prueba primero tienen que haberla relacionado con esa persona en el <b>corcho de conexiones</b> — sin esa conexión, no hay nada que confrontar.</p>
+    <div class="grid-sospechosos">
+      ${CASO.sospechosos.map(s=>{
+        const conf = estado.confrontaciones[s.id];
+        let badge = "";
+        if(conf?.rota) badge = `<span class="badge-estado badge-estado--roto">${s.estadoTrasRevelar}</span>`;
+        else if(conf?.aclarada) badge = `<span class="badge-estado badge-estado--roto" style="background:rgba(76,122,76,.18);color:var(--ok);border-color:var(--ok)">${s.estadoTrasRevelar}</span>`;
+        else if(conf?.parcial) badge = `<span class="badge-estado badge-estado--parcial">Coartada agrietada</span>`;
+        else if(s.sospechaInicial) badge = `<span class="badge-estado badge-estado--sospecha">Sospecha alta</span>`;
+        return `<div class="mugshot-card" onclick="abrirSospechoso('${s.id}')">
+          <div class="mugshot-plate"><span class="mugshot-num">N.º ${s.id.toUpperCase()}</span>${ICONO_BUSTO}</div>
+          <div class="mugshot-info"><h4>${s.nombre}</h4><span>${s.rol}</span>${badge}</div>
+        </div>`;
+      }).join("")}
+      <div class="mugshot-card" onclick="abrirTestigo()">
+        <div class="mugshot-plate"><span class="mugshot-num">TESTIGO</span>${ICONO_BUSTO}</div>
+        <div class="mugshot-info"><h4>${CASO.testigo.nombre}</h4><span>${CASO.testigo.rol}</span></div>
+      </div>
+    </div>`;
+}
+
+function abrirSospechoso(id){ estado.sospechosoAbierto=id; estado.testigoAbierto=false; renderPanel(); }
+function cerrarSospechoso(){ estado.sospechosoAbierto=null; renderPanel(); }
+function abrirTestigo(){ estado.testigoAbierto=true; estado.sospechosoAbierto=null; renderPanel(); }
+function cerrarTestigo(){ estado.testigoAbierto=false; renderPanel(); }
+
+function evidenciasConectadas(id){
+  return estado.conexionesCorcho
+    .filter(([a,b])=> a===id || b===id)
+    .map(([a,b])=> a===id? b : a)
+    .filter(pid => CASO.pruebas.some(p=>p.id===pid));
+}
+
+function renderModalTestigo(){
+  let existente = document.getElementById("modal-fondo");
+  if(existente) existente.remove();
+  const t = CASO.testigo;
+  const div = document.createElement("div");
+  div.id = "modal-fondo"; div.className = "modal-fondo";
+  div.onclick = (e)=>{ if(e.target===div) cerrarTestigo(); };
+  div.innerHTML = `
+    <div class="modal">
+      <button class="modal-cerrar" onclick="cerrarTestigo()">✕</button>
+      <h3>${t.nombre}, ${t.edad} años</h3>
+      <p><b>${t.rol}</b></p>
+      <div class="testimonio">${t.testimonio}</div>
+      <p class="texto-suave" style="color:#6b654c">No es sospechosa de homicidio. Su letra podría coincidir con algo más — revisen la hoja de firmas en la pestaña Documentos.</p>
+    </div>`;
+  document.body.appendChild(div);
+}
+
+function renderModalSospechoso(){
+  const s = CASO.sospechosos.find(x=>x.id===estado.sospechosoAbierto);
+  const conf = estado.confrontaciones[s.id] || {};
+  const resuelto = conf.rota || conf.aclarada;
+  const conectadas = evidenciasConectadas(s.id);
+
+  let existente = document.getElementById("modal-fondo");
+  if(existente) existente.remove();
+
+  const div = document.createElement("div");
+  div.id = "modal-fondo"; div.className = "modal-fondo";
+  div.onclick = (e)=>{ if(e.target===div) cerrarSospechoso(); };
+
+  let cuerpo;
+  if(resuelto){
+    cuerpo = `<div class="respuesta-suspecto ${conf.rota?'negativa':'positiva'}"><b>${conf.rota?'Confesión bajo presión':'Aclaración obtenida'}:</b> <span class="revelacion-texto">${s.revelacion}</span></div>`;
+  } else {
+    let usadas = [];
+    if(s.pasos){ usadas = conf.parcial ? [s.pasos[0].evidencia] : []; }
+    const disponibles = conectadas.filter(id => !usadas.includes(id));
+    let parcialHtml = "";
+    if(conf.parcial && s.pasos){ parcialHtml = `<div class="respuesta-suspecto positiva parcial-texto">${s.pasos[0].textoParcial}</div>`; }
+    if(disponibles.length===0){
+      cuerpo = `${parcialHtml}<p class="sin-conexion">Todavía no han relacionado ninguna prueba nueva con ${s.nombre.split(' ')[0]} en el corcho de conexiones. Vuelvan ahí, tiendan un hilo, y regresen a interrogar.</p>`;
+    } else {
+      cuerpo = `${parcialHtml}
+        <p><b>Presenten una prueba conectada:</b></p>
+        <div class="evidencia-grid" id="grid-evidencia">
+          ${disponibles.map(id=>{const p=CASO.pruebas.find(x=>x.id===id); return `<button class="evidencia-btn" onclick="confrontar('${s.id}','${id}')">${p.nombre}</button>`;}).join("")}
+        </div>
+        <div id="respuesta-zona"></div>`;
+    }
+  }
+
+  div.innerHTML = `
+    <div class="modal">
+      <button class="modal-cerrar" onclick="cerrarSospechoso()">✕</button>
+      <h3>${s.nombre}, ${s.edad} años</h3>
+      <p><b>${s.rol}</b></p>
+      <p class="texto-suave" style="color:#6b654c">${s.relacion}</p>
+      <div class="testimonio">${s.testimonio}</div>
+      <p><b>Coartada declarada:</b> ${s.coartada}</p>
+      ${cuerpo}
+    </div>`;
+  document.body.appendChild(div);
+}
+
+function confrontar(sospechosoId, pruebaId){
+  const s = CASO.sospechosos.find(x=>x.id===sospechosoId);
+  const actual = estado.confrontaciones[sospechosoId];
+  if(actual?.rota || actual?.aclarada) return;
+
+  if(s.pasos){
+    const indice = actual?.parcial ? 1 : 0;
+    const paso = s.pasos[indice];
+    if(pruebaId !== paso.evidencia){
+      mostrarDeflexion(s);
+      return;
+    }
+    if(indice === s.pasos.length-1){
+      estado.confrontaciones[sospechosoId] = {rota:true};
+      renderRail(); renderModalSospechoso();
+      escribirMaquina(document.querySelector(".revelacion-texto"), s.revelacion, 11);
+    } else {
+      estado.confrontaciones[sospechosoId] = {parcial:true};
+      renderRail(); renderModalSospechoso();
+      escribirMaquina(document.querySelector(".parcial-texto"), paso.textoParcial, 11);
+    }
+    return;
+  }
+
+  if(pruebaId === s.evidenciaClave){
+    estado.confrontaciones[sospechosoId] = s.esCulpable ? {rota:true} : {aclarada:true};
+    renderRail(); renderModalSospechoso();
+    escribirMaquina(document.querySelector(".revelacion-texto"), s.revelacion, 11);
+    return;
+  }
+  mostrarDeflexion(s);
+}
+function mostrarDeflexion(s){
+  const zona = document.getElementById("respuesta-zona");
+  if(zona) zona.innerHTML = `<div class="respuesta-suspecto negativa">${s.stonewall}</div>`;
+}
+
+/* ---------- corcho ---------- */
+const PIN_POS = {
+  ricardo:{x:10,y:12}, marta:{x:30,y:12}, diego:{x:50,y:12}, carla:{x:70,y:12}, ivan:{x:90,y:12},
+  tela:{x:15,y:45}, copa:{x:35,y:45}, diario:{x:55,y:45}, bitacora_general:{x:75,y:45}, taxi:{x:93,y:45},
+  sofia:{x:50,y:80}
+};
+const ALIAS_CORCHO = {
+  tela:"Tela rasgada", copa:"Copa rota", diario:"Diario", bitacora_general:"Bitácora", taxi:"Recibo taxi"
+};
+function vistaCorcho(){
+  const pinesHtml = Object.entries(PIN_POS).map(([id,pos])=>{
+    const s = CASO.sospechosos.find(x=>x.id===id);
+    const esTestigo = id==="sofia";
+    const p = CASO.pruebas.find(x=>x.id===id);
+    const nombre = s ? s.nombre.split(" ")[0]+" "+s.nombre.split(" ")[1][0]+"." : esTestigo ? "Sofía L." : ALIAS_CORCHO[id];
+    const inicial = s ? s.nombre.split(" ").map(w=>w[0]).slice(0,2).join("") : esTestigo ? "SL" : p.nombre[0];
+    const sel = estado.seleccionCorcho===id ? "seleccionado" : "";
+    const claseFoto = (s||esTestigo) ? "" : "evidencia";
+    return `<div class="pin ${sel}" style="left:${pos.x}%; top:${pos.y}%;" onclick="clicPin('${id}')">
+      <div class="pin-foto ${claseFoto}">${inicial}</div>
+      <span class="pin-etiqueta">${nombre}</span>
+    </div>`;
+  }).join("");
+  return `
+    <p class="corcho-intro">Corcho de conexiones — pulsen dos elementos para tender un hilo entre ellos. Vuelvan a pulsarlos para quitarlo. Conectar una prueba con una persona es lo que les permite confrontarla con ella en el interrogatorio.</p>
+    <div class="corcho" id="corcho"><svg id="svg-cuerdas" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>${pinesHtml}</div>
+    <p class="corcho-ayuda">Conexiones actuales: ${estado.conexionesCorcho.length}</p>`;
+}
+function clicPin(id){
+  if(!estado.seleccionCorcho){ estado.seleccionCorcho=id; renderPanel(); return; }
+  if(estado.seleccionCorcho===id){ estado.seleccionCorcho=null; renderPanel(); return; }
+  const a=estado.seleccionCorcho, b=id;
+  const idx = estado.conexionesCorcho.findIndex(c=>(c[0]===a&&c[1]===b)||(c[0]===b&&c[1]===a));
+  if(idx>=0) estado.conexionesCorcho.splice(idx,1);
+  else estado.conexionesCorcho.push([a,b]);
+  estado.seleccionCorcho=null;
+  renderPanel();
+}
+function dibujarCuerdas(){
+  const svg = document.getElementById("svg-cuerdas");
+  if(!svg) return;
+  svg.innerHTML = estado.conexionesCorcho.map(([a,b])=>{
+    const pa=PIN_POS[a], pb=PIN_POS[b];
+    const mx=(pa.x+pb.x)/2, my=(pa.y+pb.y)/2 + 6;
+    return `<path d="M ${pa.x} ${pa.y} Q ${mx} ${my} ${pb.x} ${pb.y}" stroke="#a53131" stroke-width="0.5" vector-effect="non-scaling-stroke" fill="none" opacity="0.85"/>`;
+  }).join("");
+}
+
+/* ---------- cuaderno ---------- */
+function vistaCuaderno(){
+  return `
+    <div class="doc">
+      <div class="doc-etiqueta">Cuaderno del investigador</div>
+      <h3>Su teoría del caso</h3>
+      <p class="texto-suave" style="color:#6b654c">Antes de acusar a alguien, escriban en sus propias palabras qué creen que pasó: quién, con qué, y por qué. No se puntúa — pero la pestaña de acusación no se habilita hasta que hayan puesto algo de verdad en orden.</p>
+      <textarea class="cuaderno-area" oninput="actualizarCuaderno(this.value)" placeholder="Ej: Creo que fue... porque...">${estado.cuaderno}</textarea>
+      <p class="cuaderno-contador">${estado.cuaderno.length} / ${CASO.minCuaderno} caracteres mínimos</p>
+    </div>`;
+}
+function actualizarCuaderno(v){ estado.cuaderno = v; const c = document.querySelector(".cuaderno-contador"); if(c) c.textContent = `${v.length} / ${CASO.minCuaderno} caracteres mínimos`; }
+
+/* ---------- objetivos ---------- */
+function vistaObjetivos(){
+  return CASO.objetivos.map(o=>{
+    const guardado = estado.respuestasObjetivos[o.id];
+    return `<div class="doc">
+      <div class="doc-etiqueta">${o.titulo}</div>
+      <p><b>${o.pregunta}</b></p>
+      ${o.opciones.map((op,i)=>{
+        let cls="opcion";
+        if(guardado!==undefined){
+          if(i===o.correcta) cls+=" correcta";
+          else if(i===guardado) cls+=" incorrecta";
+        }
+        return `<button class="${cls}" ${guardado!==undefined?'disabled':''} onclick="responderObjetivo('${o.id}',${i})">${op}</button>`;
+      }).join("")}
+      ${guardado===undefined ? `<p class="texto-suave" style="margin-top:6px;">Pista: ${o.pista}</p>` : ""}
+    </div>`;
+  }).join("");
+}
+function responderObjetivo(id,i){ estado.respuestasObjetivos[id]=i; renderPanel(); }
+
+/* ---------- acusación ---------- */
+function vistaAcusacion(){
+  if(estado.cuaderno.length < CASO.minCuaderno){
+    return `<div class="doc"><div class="doc-etiqueta">Cierre del expediente</div><h3>Todavía no</h3>
+      <div class="aviso-bloqueo">Antes de acusar a alguien formalmente, completen su teoría del caso en la pestaña <b>Cuaderno</b> (al menos ${CASO.minCuaderno} caracteres). Un buen expediente no se cierra a la ligera.</div></div>`;
+  }
+  const ac = estado.acusacion;
+  return `
+    <div class="doc">
+      <div class="doc-etiqueta">Cierre del expediente</div>
+      <h3>Acusación formal</h3>
+      <p>Elijan responsable, arma, motivo y al menos una prueba de respaldo.</p>
+      <h4 style="margin:14px 0 6px;">¿Quién es el/la responsable?</h4>
+      <div class="lista-elegible">
+        ${CASO.sospechosos.map(s=>`<button class="elegible ${ac.sospechosoId===s.id?'marcado':''}" onclick="elegirAcusado('${s.id}')">${s.nombre}</button>`).join("")}
+      </div>
+      <h4 style="margin:14px 0 6px;">¿Con qué arma?</h4>
+      <div class="lista-elegible">
+        ${CASO.armasOpciones.map(id=>{
+          const p = CASO.pruebas.find(x=>x.id===id);
+          return `<button class="elegible ${ac.armaId===id?'marcado':''}" onclick="elegirArma('${id}')">${p.nombre}</button>`;
+        }).join("")}
+      </div>
+      <h4 style="margin:14px 0 6px;">¿Cuál fue el motivo?</h4>
+      <div class="lista-elegible">
+        ${CASO.motivos.map(m=>`<button class="elegible ${ac.motivoId===m.id?'marcado':''}" onclick="elegirMotivo('${m.id}')">${m.texto}</button>`).join("")}
+      </div>
+      <h4 style="margin:14px 0 6px;">Pruebas de respaldo (elijan al menos una)</h4>
+      <div class="lista-elegible">
+        ${CASO.pruebas.map(p=>`<button class="elegible ${ac.pruebaIds.includes(p.id)?'marcado-multi':''}" onclick="toggleEvidenciaAcusacion('${p.id}')">${p.nombre}</button>`).join("")}
+      </div>
+      <button class="btn btn--sangre" style="margin-top:16px;" ${!(ac.sospechosoId&&ac.armaId&&ac.motivoId&&ac.pruebaIds.length) ? "disabled":""} onclick="confirmarAcusacion()">Presentar acusación formal</button>
+      <p class="texto-suave" style="margin-top:10px;">Una vez presentada, no van a poder cambiarla — se les pedirá confirmar antes de cerrarla.</p>
+    </div>`;
+}
+function elegirAcusado(id){ estado.acusacion.sospechosoId=id; renderPanel(); }
+function elegirArma(id){ estado.acusacion.armaId=id; renderPanel(); }
+function elegirMotivo(id){ estado.acusacion.motivoId=id; renderPanel(); }
+function toggleEvidenciaAcusacion(id){
+  const arr = estado.acusacion.pruebaIds;
+  const i = arr.indexOf(id);
+  if(i>=0) arr.splice(i,1); else arr.push(id);
+  renderPanel();
+}
+
+function calcularResultado(){
+  const ac = estado.acusacion;
+  const detalle = [];
+  let total = 0;
+
+  const sospCorrecto = ac.sospechosoId === CASO.sospechosoCorrectoId;
+  const confesionCulpable = estado.confrontaciones[CASO.sospechosoCorrectoId]?.rota;
+  if(sospCorrecto && confesionCulpable){ total+=40; detalle.push({label:"Sospechosa correcta, con confesión completa", puntos:40, ok:true}); }
+  else if(sospCorrecto){ total+=18; detalle.push({label:"Sospechosa correcta, pero sin confesión completa", puntos:18, ok:true}); }
+  else { total-=15; const s=CASO.sospechosos.find(x=>x.id===ac.sospechosoId); detalle.push({label:`Acusaron a ${s.nombre}, inocente`, puntos:-15, ok:false}); }
+
+  const armaCorrecta = ac.armaId === CASO.armaCorrectaId;
+  if(armaCorrecta) total+=20;
+  detalle.push({label:"Arma homicida", puntos:armaCorrecta?20:0, ok:armaCorrecta});
+
+  const motivo = CASO.motivos.find(m=>m.id===ac.motivoId);
+  const motivoOk = !!motivo?.correcto;
+  if(motivoOk) total+=20;
+  detalle.push({label:"Motivo", puntos:motivoOk?20:0, ok:motivoOk});
+
+  const validas = ac.pruebaIds.filter(id=>CASO.pruebasClave.includes(id));
+  const cuentan = Math.min(validas.length,2);
+  total += cuentan*10;
+  detalle.push({label:`${cuentan} prueba(s) de respaldo válidas`, puntos:cuentan*10, ok:cuentan>0});
+
+  total = Math.max(0, Math.min(100,total));
+
+  let veredicto;
+  if(total>=90) veredicto="Caso resuelto con precisión ejemplar";
+  else if(total>=70) veredicto="Caso resuelto correctamente";
+  else if(total>=40) veredicto="Resolución parcial, con dudas razonables";
+  else veredicto="El caso queda sin resolver de forma convincente";
+
+  return {total, detalle, veredicto};
+}
+
+function confirmarAcusacion(){
+  const ac = estado.acusacion;
+  const s = CASO.sospechosos.find(x=>x.id===ac.sospechosoId);
+  const arma = CASO.pruebas.find(x=>x.id===ac.armaId);
+  const motivo = CASO.motivos.find(x=>x.id===ac.motivoId);
+
+  let existente = document.getElementById("modal-fondo");
+  if(existente) existente.remove();
+  const div = document.createElement("div");
+  div.id = "modal-fondo"; div.className = "modal-fondo";
+  div.innerHTML = `
+    <div class="modal">
+      <h3>¿Cerrar el expediente con esta acusación?</h3>
+      <p class="texto-suave">Revisen bien: después de confirmar, no van a poder volver a esta pestaña ni cambiar nada. El resultado no se conocerá hasta que ${estado.numJugadoresEsperados>1?'todas las personas de la ronda':'ustedes'} terminen.</p>
+      <div class="testimonio" style="font-style:normal;">
+        <b>Responsable:</b> ${s.nombre}<br>
+        <b>Arma:</b> ${arma.nombre}<br>
+        <b>Motivo:</b> ${motivo.texto}
+      </div>
+      <div class="fila-modal">
+        <button class="btn btn--fantasma" onclick="document.getElementById('modal-fondo').remove()">Volver a revisar</button>
+        <button class="btn btn--sangre" onclick="bloquearYEnviarAcusacion()">Sí, cerrar mi expediente</button>
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+}
+
+function bloquearYEnviarAcusacion(){
+  const modal = document.getElementById("modal-fondo");
+  if(modal) modal.remove();
+
+  clearInterval(intervaloReloj);
+  const segundos = estado.inicioTiempo ? Math.floor((Date.now()-estado.inicioTiempo)/1000) : 0;
+  estado.tiempoFinalSeg = segundos;
+  pintarReloj(segundos);
+
+  const { total, detalle, veredicto } = calcularResultado();
+  estado.acusacionBloqueada = true;
+
+  guardarResultadoJugador({
+    nombre: estado.nombreJugador || "Investigador/a sin nombre",
+    puntaje: total,
+    detalle, veredicto,
+    tiempoSeg: segundos,
+    acusacion: estado.acusacion,
+    cuaderno: estado.cuaderno,
+    terminadoEn: Date.now()
+  });
+
+  document.getElementById("rail").innerHTML = "";
+  renderPanel();
+}
+
+function vistaEspera(){
+  const jugadores = leerJugadores();
+  const entradas = Object.entries(jugadores);
+  const terminados = entradas.length;
+  const esperados = estado.numJugadoresEsperados || 1;
+  const listos = terminados >= esperados || estado.revelarForzado;
+
+  if(!listos){
+    return `
+      <div class="doc" style="text-align:center;">
+        <div class="estampa estampa--ambar">Expediente cerrado</div>
+        <h3 style="margin-top:14px;">Esperando a que el resto termine su acusación</h3>
+        <p class="texto-suave">${terminados} de ${esperados} han presentado su acusación. El ranking se revela cuando todas hayan terminado.</p>
+        <div class="lista-elegible" style="margin-top:16px;">
+          ${entradas.map(([id,j])=>`<div class="elegible marcado" style="cursor:default;">✓ ${j.nombre}</div>`).join("") || '<p class="texto-suave">Todavía nadie más ha terminado.</p>'}
+        </div>
+        <button class="btn btn--fantasma" style="margin-top:18px;" onclick="forzarRevelado()">Revelar de todas formas (sin esperar más)</button>
+      </div>`;
+  }
+  return vistaRanking(jugadores);
+}
+function forzarRevelado(){ estado.revelarForzado = true; renderPanel(); }
+
+function vistaRanking(jugadores){
+  const miId = idJugador();
+  const culpable = CASO.sospechosos.find(s=>s.id===CASO.sospechosoCorrectoId);
+  const filas = Object.entries(jugadores)
+    .map(([id,j])=>({id, ...j}))
+    .sort((a,b)=> b.puntaje - a.puntaje || a.tiempoSeg - b.tiempoSeg);
+
+  return `
+    <div class="stack">
+      <div class="veredicto-panel">
+        <div class="estampa">Ranking final</div>
+        <h3 style="margin-top:14px;">Así quedó el expediente</h3>
+        <p class="texto-suave">Ordenado por puntaje; en caso de empate, gana quien acusó más rápido.</p>
+      </div>
+      <div class="doc">
+        ${filas.map((f,i)=>`
+          <div class="detalle-fila ${f.id===miId?'ok':''}" style="align-items:center;">
+            <span><b>#${i+1}</b> ${f.nombre}${f.id===miId?' (ustedes)':''}</span>
+            <span>${f.puntaje} pts · ${formatoTiempo(f.tiempoSeg)}</span>
+          </div>`).join("")}
+      </div>
+      <div class="doc">
+        <div class="doc-etiqueta">Resolución real</div>
+        <h3>El expediente cierra con...</h3>
+        <p><b>${culpable.nombre}</b> es la autora del homicidio de Elena Vasco Reyes.</p>
+        <p>${culpable.revelacion}</p>
+      </div>
+      <div style="text-align:center;">
+        <button class="btn" onclick="location.reload()">Reiniciar investigación</button>
+      </div>
+    </div>`;
+}
+</script>

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "muldrel-static",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "-l", "4300"],
+      "port": 4300
+    },
+    {
+      "name": "muldrel-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "app-vite-firebase", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}
