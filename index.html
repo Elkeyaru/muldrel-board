@@ -132,6 +132,11 @@
     color:var(--text); font-family:'IBM Plex Mono'; font-size:0.9rem;
   }
   .input-lobby:focus-visible{outline:2px solid var(--amber);}
+  .tabs-modo-sala{display:flex; gap:8px; margin:8px 0 4px;}
+  .tab-modo{flex:1; padding:9px 10px; border-radius:var(--r-btn); border:1px solid var(--line); background:var(--ink); color:var(--text-dim); font-family:'IBM Plex Mono'; font-size:0.72rem; letter-spacing:0.5px; text-transform:uppercase;}
+  .tab-modo.activo{border-color:var(--amber); color:var(--amber); background:rgba(201,138,44,0.08);}
+  .chip-sala{border:1px solid var(--line); border-radius:var(--r-pill); padding:3px 10px; margin-right:10px; font-variant-numeric:tabular-nums;}
+  .chip-sala b{color:var(--amber); letter-spacing:1px;}
   .lobby-volver{background:none; border:none; color:var(--text-dim); font-family:'IBM Plex Mono'; font-size:0.72rem; letter-spacing:1px; text-transform:uppercase;}
 
   .btn-audio{
@@ -359,7 +364,7 @@
 <div id="juego">
   <div class="topbarra">
     <div class="topbarra-caso">EXPEDIENTE MB-07<small>TELÓN FINAL · CONFIDENCIAL</small></div>
-    <div class="topbarra-derecha"><span class="reloj" id="reloj">00:00</span></div>
+    <div class="topbarra-derecha"><span class="chip-sala">Sala <b id="codigo-sala-visible">—</b></span> <span class="reloj" id="reloj">00:00</span></div>
   </div>
   <div class="cuerpo">
     <nav class="rail" id="rail"></nav>
@@ -622,20 +627,55 @@ const estado = {
   numJugadoresEsperados:1,
   acusacionBloqueada:false,
   tiempoFinalSeg:null,
-  revelarForzado:false
+  revelarForzado:false,
+  codigoSala:null,
+  modoSala:"crear",
+  salaLista:false,
+  jugadoresCache:{}
 };
 
-/* ================= SALA COMPARTIDA (misma investigación entre pestañas) ================= */
-const SALA_KEY = "muldrel_sala_v1";
-const JUGADORES_KEY = "muldrel_jugadores_v1";
+/* ================= FIREBASE (sala real entre dispositivos) ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBaYNsDveF0isLnSMMU5cgMAljoLiXeYaA",
+  authDomain: "muldrel.firebaseapp.com",
+  projectId: "muldrel",
+  storageBucket: "muldrel.firebasestorage.app",
+  messagingSenderId: "280203722928",
+  appId: "1:280203722928:web:b1ae6495057fb7a2cebb75"
+};
+let fbDb = null, fbDoc, fbSetDoc, fbUpdateDoc, fbOnSnapshot;
+const firebaseListo = (async () => {
+  try {
+    const v = "10.13.2";
+    const appMod = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`);
+    const fsMod = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore.js`);
+    const app = appMod.initializeApp(firebaseConfig);
+    fbDb = fsMod.getFirestore(app);
+    fbDoc = fsMod.doc; fbSetDoc = fsMod.setDoc; fbUpdateDoc = fsMod.updateDoc; fbOnSnapshot = fsMod.onSnapshot;
+    return true;
+  } catch (e) {
+    console.warn("Firebase no disponible, usando modo local (solo mismo navegador):", e);
+    fbDb = null;
+    return false;
+  }
+})();
 
+/* ================= SALA COMPARTIDA (Firestore si hay conexión; localStorage como respaldo) ================= */
 function idJugador(){
   let id = sessionStorage.getItem("muldrel_pid");
   if(!id){ id = "p_" + Math.random().toString(36).slice(2,9); sessionStorage.setItem("muldrel_pid", id); }
   return id;
 }
-function guardarSala(){
-  const compartido = {
+function generarCodigoSala(){
+  const letras = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let c = "";
+  for(let i=0;i<5;i++) c += letras[Math.floor(Math.random()*letras.length)];
+  return c;
+}
+function claveLocal(sufijo){ return `muldrel_${sufijo}_${estado.codigoSala || "local"}`; }
+
+function datosCompartidos(){
+  return {
     hallazgosVistos: estado.hallazgosVistos,
     autopsiaVista: estado.autopsiaVista,
     confrontaciones: estado.confrontaciones,
@@ -643,32 +683,83 @@ function guardarSala(){
     caligrafiaElegida: estado.caligrafiaElegida,
     numJugadoresEsperados: estado.numJugadoresEsperados
   };
-  localStorage.setItem(SALA_KEY, JSON.stringify(compartido));
 }
-function cargarSala(){
-  const raw = localStorage.getItem(SALA_KEY);
-  if(!raw) return;
-  const d = JSON.parse(raw);
-  Object.assign(estado, d);
+function guardarSala(){
+  if(!estado.salaLista) return; // evita pisar la sala antes de recibir su estado real
+  const compartido = datosCompartidos();
+  if(fbDb && estado.codigoSala){
+    fbSetDoc(fbDoc(fbDb, "salas", estado.codigoSala), compartido, {merge:true}).catch(()=>{});
+  } else {
+    localStorage.setItem(claveLocal("sala"), JSON.stringify(compartido));
+  }
 }
 function guardarResultadoJugador(resultado){
-  const todos = JSON.parse(localStorage.getItem(JUGADORES_KEY) || "{}");
-  todos[idJugador()] = resultado;
-  localStorage.setItem(JUGADORES_KEY, JSON.stringify(todos));
+  if(fbDb && estado.codigoSala){
+    fbUpdateDoc(fbDoc(fbDb, "salas", estado.codigoSala), {[`jugadores.${idJugador()}`]: resultado}).catch(()=>{});
+  } else {
+    const todos = JSON.parse(localStorage.getItem(claveLocal("jugadores")) || "{}");
+    todos[idJugador()] = resultado;
+    localStorage.setItem(claveLocal("jugadores"), JSON.stringify(todos));
+    estado.jugadoresCache = todos;
+  }
 }
-function leerJugadores(){
-  return JSON.parse(localStorage.getItem(JUGADORES_KEY) || "{}");
-}
-window.addEventListener("storage", (e)=>{
-  if(e.key===SALA_KEY && document.getElementById("juego").classList.contains("activo") && !estado.acusacionBloqueada){
-    cargarSala();
+function leerJugadores(){ return estado.jugadoresCache; }
+
+let cancelarSuscripciones = [];
+async function suscribirseASala(soyAnfitrion){
+  const listo = await firebaseListo;
+  cancelarSuscripciones.forEach(f=>f());
+  cancelarSuscripciones = [];
+
+  if(listo && fbDb){
+    const refSala = fbDoc(fbDb, "salas", estado.codigoSala);
+    const offSala = fbOnSnapshot(refSala, (snap)=>{
+      if(!snap.exists()){
+        if(!soyAnfitrion) mostrarErrorSala();
+        return;
+      }
+      const d = snap.data();
+      estado.jugadoresCache = d.jugadores || {};
+      delete d.jugadores;
+      Object.assign(estado, d);
+      estado.salaLista = true;
+      renderRail();
+      renderPanel();
+    }, ()=> mostrarErrorSala());
+    cancelarSuscripciones = [offSala];
+    if(soyAnfitrion){ estado.salaLista = true; guardarSala(); }
+  } else {
+    // Respaldo sin conexión a Firebase: solo funciona entre pestañas de este navegador
+    if(soyAnfitrion){
+      estado.salaLista = true;
+      guardarSala();
+    } else {
+      const raw = localStorage.getItem(claveLocal("sala"));
+      if(!raw){ mostrarErrorSala(); return; }
+      Object.assign(estado, JSON.parse(raw));
+      estado.salaLista = true;
+    }
+    estado.jugadoresCache = JSON.parse(localStorage.getItem(claveLocal("jugadores")) || "{}");
+    const onStorage = (e)=>{
+      if(e.key===claveLocal("sala")){
+        Object.assign(estado, JSON.parse(e.newValue||"{}"));
+        renderRail(); renderPanel();
+      }
+      if(e.key===claveLocal("jugadores")){
+        estado.jugadoresCache = JSON.parse(e.newValue||"{}");
+        if(estado.acusacionBloqueada) renderPanel();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    cancelarSuscripciones = [()=>window.removeEventListener("storage", onStorage)];
     renderRail();
     renderPanel();
   }
-  if(e.key===JUGADORES_KEY && estado.acusacionBloqueada){
-    renderPanel();
-  }
-});
+}
+function mostrarErrorSala(){
+  const panel = document.getElementById("panel");
+  if(panel) panel.innerHTML = `<div class="doc"><div class="doc-etiqueta">Sala no encontrada</div><h3>No encontramos ese código</h3><p>Revisen que el código esté bien escrito y que la otra persona ya haya creado la sala. Si el problema sigue, esta página podría no tener conexión con el servidor de salas.</p><button class="btn" onclick="location.reload()">Volver al inicio</button></div>`;
+}
 
 /* ================= UTILIDADES ================= */
 /* ================= GATE · MENÚ · LOBBY ================= */
@@ -735,40 +826,80 @@ function seleccionarCaso(id){
       <div class="form-lobby">
         <label>Su nombre de investigador/a</label>
         <input class="input-lobby" id="input-nombre" placeholder="Ej: Detective Ramírez" maxlength="24" oninput="validarFormLobby()">
-        <label>¿Cuántas personas van a jugar esta ronda?</label>
-        <input class="input-lobby" id="input-num-jugadores" type="number" min="1" max="8" value="1" oninput="validarFormLobby()">
+
+        <div class="tabs-modo-sala">
+          <button type="button" class="tab-modo activo" id="tab-crear" onclick="cambiarModoSala('crear')">Crear sala nueva</button>
+          <button type="button" class="tab-modo" id="tab-unirse" onclick="cambiarModoSala('unirse')">Unirme con código</button>
+        </div>
+
+        <div id="zona-crear">
+          <label>¿Cuántas personas van a jugar esta ronda?</label>
+          <input class="input-lobby" id="input-num-jugadores" type="number" min="1" max="8" value="1" oninput="validarFormLobby()">
+        </div>
+        <div id="zona-unirse" style="display:none;">
+          <label>Código de la sala</label>
+          <input class="input-lobby" id="input-codigo-sala" placeholder="Ej: A7K2Q" maxlength="6" style="text-transform:uppercase;" oninput="validarFormLobby()">
+        </div>
+
+        <p class="texto-suave" id="texto-estado-conexion" style="text-align:left;">Comprobando conexión con el servidor de salas…</p>
         <p class="texto-suave" style="text-align:left;">El veredicto no se revela hasta que todas hayan presentado su acusación — cada quien investiga y acusa por su cuenta, y al final se arma un ranking.</p>
       </div>
-      <button class="btn btn--sangre" id="btn-abrir-carpeta" onclick="confirmarInicio()" disabled>Abrir la carpeta</button>
-      <p class="aviso-prototipo" style="margin-top:16px;">Prototipo pensado para probarse abriendo esta misma página en varias pestañas del navegador (una por investigador/a): la investigación se comparte y cada quien presenta su propia acusación al final.</p>
+      <button class="btn btn--sangre" id="btn-abrir-carpeta" onclick="confirmarInicio()" disabled>Crear sala y entrar</button>
     </div>`;
+  validarFormLobby();
+  firebaseListo.then(ok=>{
+    const t = document.getElementById("texto-estado-conexion");
+    if(!t) return;
+    t.textContent = ok
+      ? "Conectado al servidor de salas: pueden jugar desde celulares o computadoras distintas."
+      : "Sin conexión al servidor de salas: por ahora solo va a funcionar entre pestañas de este mismo navegador.";
+  });
+}
+function cambiarModoSala(modo){
+  estado.modoSala = modo;
+  document.getElementById("tab-crear").classList.toggle("activo", modo==="crear");
+  document.getElementById("tab-unirse").classList.toggle("activo", modo==="unirse");
+  document.getElementById("zona-crear").style.display = modo==="crear" ? "" : "none";
+  document.getElementById("zona-unirse").style.display = modo==="unirse" ? "" : "none";
+  document.getElementById("btn-abrir-carpeta").textContent = modo==="crear" ? "Crear sala y entrar" : "Unirme y entrar";
   validarFormLobby();
 }
 function validarFormLobby(){
   const nombre = document.getElementById("input-nombre")?.value.trim();
+  const codigo = document.getElementById("input-codigo-sala")?.value.trim();
   const btn = document.getElementById("btn-abrir-carpeta");
-  if(btn) btn.disabled = !nombre;
+  if(!btn) return;
+  btn.disabled = !nombre || (estado.modoSala==="unirse" && !codigo);
 }
 function confirmarInicio(){
   const nombre = document.getElementById("input-nombre").value.trim();
   if(!nombre) return;
   estado.nombreJugador = nombre;
-  const num = parseInt(document.getElementById("input-num-jugadores").value, 10) || 1;
-  estado.numJugadoresEsperados = Math.min(8, Math.max(1, num));
-  iniciarJuego();
+
+  if(estado.modoSala==="crear"){
+    const num = parseInt(document.getElementById("input-num-jugadores").value, 10) || 1;
+    estado.numJugadoresEsperados = Math.min(8, Math.max(1, num));
+    estado.codigoSala = generarCodigoSala();
+    iniciarJuego(true);
+  } else {
+    const codigo = document.getElementById("input-codigo-sala").value.trim().toUpperCase();
+    if(!codigo) return;
+    estado.codigoSala = codigo;
+    iniciarJuego(false);
+  }
 }
 
 let intervaloReloj = null;
-function iniciarJuego(){
+function iniciarJuego(soyAnfitrion){
   audioMenu.pause();
   if(!sonidoSilenciado){ audioJuego.currentTime = 0; audioJuego.volume = 0.5; audioJuego.play().catch(()=>{}); }
   document.getElementById("lobby").classList.remove("activo");
   document.getElementById("juego").classList.add("activo");
   window.scrollTo(0,0);
-  cargarSala();
-  guardarSala();
+  document.getElementById("codigo-sala-visible").textContent = estado.codigoSala;
   estado.inicioTiempo = Date.now();
   intervaloReloj = setInterval(actualizarReloj, 1000);
+  suscribirseASala(soyAnfitrion);
   renderRail();
   renderPanel();
 }
