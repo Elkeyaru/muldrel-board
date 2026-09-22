@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Muldrel Board — juego de mesa online de resolución de casos criminales">
 <title>Expediente Muldrel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -107,6 +113,8 @@
   /* ---------- lobby ---------- */
   #lobby{min-height:100vh; display:none; flex-direction:column; align-items:center; gap:28px; padding:48px 18px 70px; text-align:center;}
   #lobby.activo{display:flex;}
+  #sala-espera-previa{min-height:100vh; display:none; flex-direction:column; align-items:center; gap:24px; padding:48px 18px 70px; text-align:center;}
+  #sala-espera-previa.activo{display:flex;}
   .lobby-titulo{font-size:clamp(1.8rem,5vw,2.6rem); color:var(--paper);}
   .grid-casos{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:18px; max-width:760px; width:100%;}
   .caso-card{
@@ -336,6 +344,8 @@
   .stack{display:flex; flex-direction:column; gap:14px;}
   .texto-suave{color:var(--text-dim); font-size:0.8rem;}
 </style>
+</head>
+<body>
 
 <audio id="audio-menu" src="evidence-under-glass.mp3" loop preload="none"></audio>
 <audio id="audio-juego" src="left-on-the-threshold.mp3" loop preload="none"></audio>
@@ -359,6 +369,12 @@
   <h2 class="lobby-titulo">¿Qué caso van a abrir?</h2>
   <div class="grid-casos" id="grid-casos"></div>
   <div id="zona-detalle-caso"></div>
+</div>
+
+<div id="sala-espera-previa">
+  <div class="portada-marca">Sala de espera</div>
+  <h2 class="lobby-titulo">Reuniendo investigadores...</h2>
+  <div class="caso-detalle" id="contenido-espera-previa" style="max-width:520px;"></div>
 </div>
 
 <div id="juego">
@@ -631,8 +647,13 @@ const estado = {
   codigoSala:null,
   modoSala:"crear",
   salaLista:false,
-  jugadoresCache:{}
+  jugadoresCache:{},
+  previos:{},
+  cuentaRegresivaFin:null,
+  yaMeUni:false,
+  partidaComenzada:false
 };
+const ESPERA_MS = 60000;
 
 /* ================= FIREBASE (sala real entre dispositivos) ================= */
 const firebaseConfig = {
@@ -681,7 +702,9 @@ function datosCompartidos(){
     confrontaciones: estado.confrontaciones,
     conexionesCorcho: estado.conexionesCorcho,
     caligrafiaElegida: estado.caligrafiaElegida,
-    numJugadoresEsperados: estado.numJugadoresEsperados
+    numJugadoresEsperados: estado.numJugadoresEsperados,
+    previos: estado.previos,
+    cuentaRegresivaFin: estado.cuentaRegresivaFin
   };
 }
 function guardarSala(){
@@ -705,6 +728,25 @@ function guardarResultadoJugador(resultado){
 }
 function leerJugadores(){ return estado.jugadoresCache; }
 
+function alUnirmePorPrimeraVez(soyAnfitrion){
+  if(estado.yaMeUni) return;
+  estado.yaMeUni = true;
+  if(!(idJugador() in (estado.previos||{}))){
+    estado.previos = {...(estado.previos||{}), [idJugador()]: {nombre: estado.nombreJugador, listo:false}};
+    if(soyAnfitrion && !estado.cuentaRegresivaFin) estado.cuentaRegresivaFin = Date.now() + ESPERA_MS;
+    guardarSala();
+  }
+}
+function renderizarSegunPantalla(){
+  if(document.getElementById("sala-espera-previa").classList.contains("activo")){
+    renderSalaEsperaPrevia();
+    revisarInicioAutomatico();
+  } else if(document.getElementById("juego").classList.contains("activo")){
+    renderRail();
+    renderPanel();
+  }
+}
+
 let cancelarSuscripciones = [];
 async function suscribirseASala(soyAnfitrion){
   const listo = await firebaseListo;
@@ -723,8 +765,8 @@ async function suscribirseASala(soyAnfitrion){
       delete d.jugadores;
       Object.assign(estado, d);
       estado.salaLista = true;
-      renderRail();
-      renderPanel();
+      alUnirmePorPrimeraVez(soyAnfitrion);
+      renderizarSegunPantalla();
     }, ()=> mostrarErrorSala());
     cancelarSuscripciones = [offSala];
     if(soyAnfitrion){ estado.salaLista = true; guardarSala(); }
@@ -732,18 +774,18 @@ async function suscribirseASala(soyAnfitrion){
     // Respaldo sin conexión a Firebase: solo funciona entre pestañas de este navegador
     if(soyAnfitrion){
       estado.salaLista = true;
-      guardarSala();
     } else {
       const raw = localStorage.getItem(claveLocal("sala"));
       if(!raw){ mostrarErrorSala(); return; }
       Object.assign(estado, JSON.parse(raw));
       estado.salaLista = true;
     }
+    alUnirmePorPrimeraVez(soyAnfitrion);
     estado.jugadoresCache = JSON.parse(localStorage.getItem(claveLocal("jugadores")) || "{}");
     const onStorage = (e)=>{
       if(e.key===claveLocal("sala")){
         Object.assign(estado, JSON.parse(e.newValue||"{}"));
-        renderRail(); renderPanel();
+        renderizarSegunPantalla();
       }
       if(e.key===claveLocal("jugadores")){
         estado.jugadoresCache = JSON.parse(e.newValue||"{}");
@@ -752,13 +794,15 @@ async function suscribirseASala(soyAnfitrion){
     };
     window.addEventListener("storage", onStorage);
     cancelarSuscripciones = [()=>window.removeEventListener("storage", onStorage)];
-    renderRail();
-    renderPanel();
+    renderizarSegunPantalla();
   }
 }
 function mostrarErrorSala(){
+  const html = `<div class="doc"><div class="doc-etiqueta">Sala no encontrada</div><h3>No encontramos ese código</h3><p>Revisen que el código esté bien escrito y que la otra persona ya haya creado la sala. Si el problema sigue, esta página podría no tener conexión con el servidor de salas.</p><button class="btn" onclick="location.reload()">Volver al inicio</button></div>`;
+  const cont = document.getElementById("contenido-espera-previa");
+  if(cont && document.getElementById("sala-espera-previa").classList.contains("activo")){ cont.innerHTML = html; return; }
   const panel = document.getElementById("panel");
-  if(panel) panel.innerHTML = `<div class="doc"><div class="doc-etiqueta">Sala no encontrada</div><h3>No encontramos ese código</h3><p>Revisen que el código esté bien escrito y que la otra persona ya haya creado la sala. Si el problema sigue, esta página podría no tener conexión con el servidor de salas.</p><button class="btn" onclick="location.reload()">Volver al inicio</button></div>`;
+  if(panel) panel.innerHTML = html;
 }
 
 /* ================= UTILIDADES ================= */
@@ -880,26 +924,77 @@ function confirmarInicio(){
     const num = parseInt(document.getElementById("input-num-jugadores").value, 10) || 1;
     estado.numJugadoresEsperados = Math.min(8, Math.max(1, num));
     estado.codigoSala = generarCodigoSala();
-    iniciarJuego(true);
+    entrarSalaEsperaPrevia(true);
   } else {
     const codigo = document.getElementById("input-codigo-sala").value.trim().toUpperCase();
     if(!codigo) return;
     estado.codigoSala = codigo;
-    iniciarJuego(false);
+    entrarSalaEsperaPrevia(false);
+  }
+}
+
+/* ---------- sala de espera previa (antes de que empiece la investigación) ---------- */
+let intervaloEsperaPrevia = null;
+function entrarSalaEsperaPrevia(soyAnfitrion){
+  document.getElementById("lobby").classList.remove("activo");
+  document.getElementById("sala-espera-previa").classList.add("activo");
+  window.scrollTo(0,0);
+  renderSalaEsperaPrevia();
+  intervaloEsperaPrevia = setInterval(()=>{ renderSalaEsperaPrevia(); revisarInicioAutomatico(); }, 1000);
+  suscribirseASala(soyAnfitrion);
+}
+function renderSalaEsperaPrevia(){
+  const cont = document.getElementById("contenido-espera-previa");
+  if(!cont) return;
+  const entradas = Object.entries(estado.previos || {});
+  const yo = estado.previos?.[idJugador()];
+  const restanteSeg = estado.cuentaRegresivaFin ? Math.max(0, Math.ceil((estado.cuentaRegresivaFin - Date.now())/1000)) : Math.ceil(ESPERA_MS/1000);
+  const listos = entradas.filter(([,j])=>j.listo).length;
+  cont.innerHTML = `
+    <p class="texto-suave">Código de sala</p>
+    <div class="estampa estampa--ambar" style="font-size:1.3rem;">${estado.codigoSala}</div>
+    <p class="texto-suave" style="margin-top:14px;">Compártanlo con el resto. La investigación empieza en <b style="color:var(--paper-ink)">${formatoTiempo(restanteSeg)}</b>, o antes si todas las personas están listas.</p>
+    <div class="lista-elegible" style="margin:16px 0;">
+      ${entradas.map(([id,j])=>`<div class="elegible ${j.listo?'marcado':''}" style="cursor:default;">${j.listo?'✓':'…'} ${j.nombre}${id===idJugador()?' (ustedes)':''}</div>`).join("") || '<p class="texto-suave">Conectando...</p>'}
+    </div>
+    <p class="texto-suave">${listos} de ${estado.numJugadoresEsperados} listas/os para empezar.</p>
+    ${yo && !yo.listo
+      ? `<button class="btn btn--sangre" onclick="marcarListo()">Estoy listo/a</button>`
+      : `<p class="texto-suave">Ya avisaron que están listos/as. Esperando al resto o a que se acabe el tiempo...</p>`}
+  `;
+}
+function marcarListo(){
+  const id = idJugador();
+  const actual = estado.previos?.[id] || {nombre: estado.nombreJugador};
+  estado.previos = {...(estado.previos||{}), [id]: {...actual, listo:true}};
+  guardarSala();
+  renderSalaEsperaPrevia();
+  revisarInicioAutomatico();
+}
+function revisarInicioAutomatico(){
+  if(estado.partidaComenzada) return;
+  const entradas = Object.values(estado.previos || {});
+  const listos = entradas.filter(j=>j.listo).length;
+  const unidos = entradas.length;
+  const tiempoAgotado = estado.cuentaRegresivaFin && Date.now() >= estado.cuentaRegresivaFin;
+  const todosListos = unidos >= estado.numJugadoresEsperados && listos >= estado.numJugadoresEsperados;
+  if(todosListos || tiempoAgotado){
+    estado.partidaComenzada = true;
+    comenzarPartidaReal();
   }
 }
 
 let intervaloReloj = null;
-function iniciarJuego(soyAnfitrion){
+function comenzarPartidaReal(){
+  clearInterval(intervaloEsperaPrevia);
   audioMenu.pause();
   if(!sonidoSilenciado){ audioJuego.currentTime = 0; audioJuego.volume = 0.5; audioJuego.play().catch(()=>{}); }
-  document.getElementById("lobby").classList.remove("activo");
+  document.getElementById("sala-espera-previa").classList.remove("activo");
   document.getElementById("juego").classList.add("activo");
   window.scrollTo(0,0);
   document.getElementById("codigo-sala-visible").textContent = estado.codigoSala;
   estado.inicioTiempo = Date.now();
   intervaloReloj = setInterval(actualizarReloj, 1000);
-  suscribirseASala(soyAnfitrion);
   renderRail();
   renderPanel();
 }
@@ -1479,3 +1574,5 @@ function vistaRanking(jugadores){
     </div>`;
 }
 </script>
+</body>
+</html>
